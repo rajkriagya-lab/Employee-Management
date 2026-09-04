@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  LEAVE
+}
+
+enum LeaveType {
+  CASUAL
+  SICK
+  ANNUAL
+  MATERNITY
+  PATERNITY
+  UNPAID
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NoticePriority {
+  LOLW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum NotificationType {
+  GENERAL
+  TASK
+  LEAVE
+  ATTENDANCE
+  NOTICE
+  SYSTEM
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String  @unique
+  password String
+  role     Role    @default(EMPLOYEE)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee Employee?
+
+  // Tasks created/assigned by this user
+  assignedTasks Task[]         @relation("AssignedTasks")
+  notices       Notice[]       @relation("CreatedNotices")
+  notifications Notification[]
+}
+
+model Employee {
+  id           Int       @id @default(autoincrement())
+  userId       Int       @unique
+  phone        String?
+  address      String?
+  position     String?
+  departmentId Int?
+  joiningDate  DateTime?
+  salary       Float?
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department  Department?  @relation(fields: [departmentId], references: [id])
+  attendances Attendance[]
+  leaves      Leave[]
+  tasks       Task[]
+  payrolls    Payroll[]
+}
+
+model Department {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  employees Employee[]
+}
+
+model Attendance {
+  id         Int              @id @default(autoincrement())
+  employeeId Int
+  date       DateTime
+  status     AttendanceStatus
+  checkIn    DateTime?
+  checkOut   DateTime?
+  remarks    String?
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([employeeId, date])
+  @@index([date])
+  @@index([employeeId])
+}
+
+model Leave {
+  id         Int         @id @default(autoincrement())
+  employeeId Int
+  startDate  DateTime
+  endDate    DateTime
+  leaveType  LeaveType
+  reason     String?
+  status     LeaveStatus @default(PENDING)
+
+  reviewedBy      Int?
+  reviewedAt      DateTime?
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model Task {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String?
+
+  employeeId Int
+  assignedBy Int
+
+  priority TaskPriority @default(MEDIUM)
+  status   TaskStatus   @default(TODO)
+
+  dueDate    DateTime?
+  completeAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  assignedByUser User     @relation("AssignedTasks", fields: [assignedBy], references: [id])
+  userId         Int
+
+  @@index([employeeId])
+  @@index([assignedBy])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+}
+
+model Notice {
+  id      Int    @id @default(autoincrement())
+  title   String
+  message String
+
+  priority NoticePriority @default(NORMAL)
+
+  expiresAt DateTime?
+
+  createdBy Int
+
+  createdAt DateTime @default(now())
+  upatedAt  DateTime @updatedAt
+
+  createdByUser User @relation("CreatedNotices", fields: [createdBy], references: [id])
+
+  @@index([createdBy])
+  @@index([priority])
+  @@index([expiresAt])
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  title   String
+  message String
+
+  type NotificationType @default(GENERAL)
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  link String?
+
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model Payroll {
+  id Int @id @default(autoincrement())
+
+  employeeId Int
+
+  month Int
+  year  Int
+
+  basicSalary Float
+
+  allowances Float @default(0)
+  deductions Float @default(0)
+  overtime   Float @default(0)
+  bonus      Float @default(0)
+  tax        Float @default(0)
+
+  grossSalary Float
+  netSalary   Float
+
+  remarks String?
+
+  createdBy Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, month, year])
+  @@index([employeeId])
+  @@index([month])
+  @@index([year])
+}
