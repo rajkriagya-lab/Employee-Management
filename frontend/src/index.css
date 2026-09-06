@@ -1,6 +1,27 @@
 @import url(https://fonts.googleapis.com/css?family=Poppins:100,100italic,200,200italic,300,300italic,regular,italic,500,500italic,600,600italic,700,700italic,800,800italic,900,900italic);
 @import "tailwindcss";
 
+@theme {
+  /* 60% — Main background */
+  --color-primary: #F5F6F8;
+
+  /* 30% — Dark UI / text */
+  --color-text: #1F2937;
+
+  /* 10% — Actions / active states */
+  --color-btn: #2563EB;
+
+  /* Supporting colors */
+  --color-surface: #FFFFFF;
+  --color-muted: #6B7280;
+  --color-border: #E5E7EB;
+
+  /* Status */
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+  --color-danger: #DC2626;
+}
+
 body{
-  font-family: 'poppins';
+      font-family: "Poppins", sans-serif;
 }
