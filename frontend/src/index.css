@@ -2,24 +2,12 @@
 @import "tailwindcss";
 
 @theme {
-  /* 60% — Main background */
-  --color-primary: #F5F6F8;
-
-  /* 30% — Dark UI / text */
-  --color-text: #1F2937;
-
-  /* 10% — Actions / active states */
-  --color-btn: #2563EB;
-
-  /* Supporting colors */
+  --color-background: #F5F6F8;
   --color-surface: #FFFFFF;
+  --color-text: #1F2937;
+  --color-btn: #2563EB;
   --color-muted: #6B7280;
   --color-border: #E5E7EB;
-
-  /* Status */
-  --color-success: #16A34A;
-  --color-warning: #D97706;
-  --color-danger: #DC2626;
 }
 
 body{
