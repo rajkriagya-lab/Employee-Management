@@ -8,6 +8,10 @@
   --color-btn: #2563EB;
   --color-muted: #6B7280;
   --color-border: #E5E7EB;
+
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+  --color-danger: #DC2626;
 }
 
 body{

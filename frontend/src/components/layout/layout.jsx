@@ -1,50 +1,21 @@
-import React, {
-  useState,
-} from "react";
+import React from 'react'
+import Sidebar from './sidebar'
+import Navbar from './navbar'
 
-import Sidebar from "./sidbar";
-import Navbar from "./navbaravbar";
+const layout = ({ children }) => {
+    return (
+        <div className='min-h-screen bg-background'>
+            <Sidebar />
 
-const DashboardLayout = ({
-  children,
-}) => {
-  const [isOpen, setIsOpen] =
-    useState(false);
+            <div className='lg:ml-[260px]'>
+                <Navbar />
 
-  const storedUser =
-    localStorage.getItem("user") ||
-    sessionStorage.getItem("user");
+                <main className='p-6 sm:p-6 lg:p-8'>
+                    {children}
+                </main>
+            </div>
+        </div>
+    )
+}
 
-  const user = storedUser
-    ? JSON.parse(storedUser)
-    : null;
-
-  return (
-    <div className="min-h-screen bg-background">
-
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={isOpen}
-        setIsOpen={setIsOpen}
-        role={user?.role}
-      />
-
-      {/* Main */}
-      <div className="lg:ml-64 min-h-screen">
-
-        {/* Navbar */}
-        <Navbar
-          setIsOpen={setIsOpen}
-        />
-
-        {/* Page Content */}
-        <main className="p-4 sm:p-6 lg:p-7">
-          {children}
-        </main>
-
-      </div>
-    </div>
-  );
-};
-
-export default DashboardLayout;
+export default layout
