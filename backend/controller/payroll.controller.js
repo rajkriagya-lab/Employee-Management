@@ -1,4 +1,4 @@
-import prisma from "../config/prisma.js";
+import prisma from "../db.js";
 
 // =====================================================
 // CREATE PAYROLL

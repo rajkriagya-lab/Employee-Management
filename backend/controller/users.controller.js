@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import prisma from "../config/prisma.js";
+import prisma from "../db.js";
 
 // =====================================================
 // GET ALL USERS

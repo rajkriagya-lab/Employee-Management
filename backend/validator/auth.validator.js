@@ -28,7 +28,7 @@ export const loginValidator = [
     .trim()
     .notEmpty()
     .withMessage("Email is requried")
-    .isEmail
+    .isEmail()
     .withMessage(("Please provide a valid email"))
     .normalizeEmail(),
 

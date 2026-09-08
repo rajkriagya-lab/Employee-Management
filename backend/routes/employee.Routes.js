@@ -6,10 +6,10 @@ import {
   getEmployeeById,
   updateEmployee,
   deleteEmployee,
-} from "../controllers/employeeController.js";
+} from "../controller/employee.controller.js";
 
-import { protect } from "../middleware/authMiddleware.js";
-import { authorize } from "../middleware/roleMiddleware.js";
+import { protect } from "../middleware/auth.middleware.js";
+import { authorize } from "../middleware/role.middleware.js";
 
 const router = express.Router();
 

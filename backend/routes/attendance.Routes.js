@@ -11,10 +11,10 @@ import {
     updateAttendance,
     deleteAttendance,
     getAttendanceSummary,
-} from "../controllers/attendanceController.js";
+} from "../controller/attendance.controller.js";
 
-import { protect } from "../middleware/authMiddleware.js";
-import { authorize } from "../middleware/roleMiddleware.js";
+import { protect } from "../middleware/auth.middleware.js";
+import { authorize } from "../middleware/role.middleware.js";
 
 const router = express.Router();
 
