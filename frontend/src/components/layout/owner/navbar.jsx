@@ -13,7 +13,6 @@ import {
 
 import { useNavigate } from "react-router-dom";
 
-import NotificationBell from "../components/NotificationBell";
 
 const Navbar = ({
   setIsOpen,
@@ -118,7 +117,13 @@ const Navbar = ({
       <div className="flex items-center gap-2">
 
         {/* Notification */}
-        <NotificationBell />
+        <button
+          type="button"
+          aria-label="Notifications"
+          className="rounded-md p-2 text-muted hover:bg-background hover:text-text"
+        >
+          <Bell size={19} />
+        </button>
 
         {/* Divider */}
         <div className="hidden sm:block h-7 w-px bg-border mx-2" />

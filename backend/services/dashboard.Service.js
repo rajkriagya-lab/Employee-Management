@@ -10,13 +10,13 @@ export const getAdminDashboardData = async () => {
      */
 
     const [
-        totalUser,
-        totalEmployee,
-        totalDepartment,
-        totalTask,
-        totalLeave,
-        pendingLeave,
-        totalNotice,
+        totalUsers,
+        totalEmployees,
+        totalDepartments,
+        totalTasks,
+        totalLeaves,
+        pendingLeaves,
+        totalNotices,
     ] = await Promise.all([
         prisma.user.count(),
 
@@ -65,10 +65,10 @@ export const getAdminDashboardData = async () => {
      */
 
     const [
-        todoTask,
-        inProgressTask,
-        completeTask,
-        cancelledTask,
+        todoTasks,
+        inProgressTasks,
+        completedTasks,
+        cancelledTasks,
     ] = await Promise.all([
         prisma.task.count({
             where: {
@@ -103,7 +103,7 @@ export const getAdminDashboardData = async () => {
 
     startOfToday.setHours(0, 0, 0, 0);
 
-    const endOfToday = newDate();
+    const endOfToday = new Date();
 
     endOfToday.setHours(23, 59, 59, 999);
 
@@ -120,7 +120,7 @@ export const getAdminDashboardData = async () => {
     ] = await Promise.all([
         prisma.attendance.count({
             where: {
-                data: {
+                date: {
                     gte: startOfToday,
                     lte: endOfToday,
                 },
@@ -130,17 +130,17 @@ export const getAdminDashboardData = async () => {
 
         prisma.attendance.count({
             where: {
-                data: {
+                date: {
                     gte: startOfToday,
                     lte: endOfToday,
                 },
-                status: "ABESENT",
+                status: "ABSENT",
             },
         }),
 
         prisma.attendance.count({
             where: {
-                data: {
+                date: {
                     gte: startOfToday,
                     lte: endOfToday,
                 },
@@ -150,7 +150,7 @@ export const getAdminDashboardData = async () => {
 
         prisma.attendance.count({
             where: {
-                data: {
+                date: {
                     gte: startOfToday,
                     lte: endOfToday,
                 },
@@ -160,7 +160,7 @@ export const getAdminDashboardData = async () => {
 
         prisma.attendance.count({
             where: {
-                data: {
+                date: {
                     gte: startOfToday,
                     lte: endOfToday,
                 },
@@ -404,7 +404,7 @@ export const getEmployeeDashboardData = async (
     prisma.task.count({
       where: {
         employeeId: employee.id,
-        status: "COMPLETED",
+        status: "COMPLETE",
       },
     }),
   ]);

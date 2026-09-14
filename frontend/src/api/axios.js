@@ -6,16 +6,19 @@ const api = axios.create({
     "http://localhost:8000/api",
 });
 
-api.interceptors.request.use((config) => {
-  const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+api.interceptors.request.use(
+  (config) => {
+    const token =
+      localStorage.getItem("token") ||
+      sessionStorage.getItem("token");
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
 
-  return config;
-});
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export default api;

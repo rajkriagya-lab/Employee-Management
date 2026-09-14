@@ -1,14 +1,15 @@
 import jwt from "jsonwebtoken";
-import prisma from "../db.js";
 
-export const protect = async (req, res, next) => {
+const authMiddleware = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
+
+    console.log("Authorization:", authHeader);
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: "Not authorized",
+        message: "Authentication required",
       });
     }
 
@@ -19,27 +20,20 @@ export const protect = async (req, res, next) => {
       process.env.JWT_SECRET
     );
 
-    const user = await prisma.user.findUnique({
-      where: {
-        id: decoded.userId,
-      },
-    });
+    console.log("Decoded user:", decoded);
 
-    if (!user || !user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: "User not found or inactive",
-      });
-    }
-
-    req.user = user;
+    req.user = decoded;
 
     next();
-
   } catch (error) {
+    console.error("JWT ERROR:", error.message);
+
     return res.status(401).json({
       success: false,
       message: "Invalid or expired token",
     });
   }
 };
+
+export default authMiddleware;
+export { authMiddleware as protect };
