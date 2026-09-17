@@ -1,25 +1,38 @@
-import { useState } from 'react'
-import Sidebar from './sidebar'
-import Navbar from './navbar'
+import React, { useState } from "react";
+import Sidebar from "./Sidebar";
+import Navbar from "./navbar";
 
-const Layout = ({ children }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user')
-    const user = storedUser ? JSON.parse(storedUser) : null
+const DashboardLayout = ({ children }) => {
+  const [isOpen, setIsOpen] = useState(false);
 
-    return (
-        <div className='min-h-screen bg-background'>
-            <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} role={user?.role} />
+  return (
+    <div className="min-h-screen bg-background">
 
-            <div className='lg:ml-[260px]'>
-                <Navbar setIsOpen={setIsOpen} />
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+      />
 
-                <main className='p-6 sm:p-6 lg:p-8'>
-                    {children}
-                </main>
-            </div>
-        </div>
-    )
-}
+      {/* Main Area */}
+      <div
+        className="
+          lg:ml-64
+          min-h-screen
+          flex
+          flex-col
+        "
+      >
+        {/* Navbar */}
+        <Navbar setIsOpen={setIsOpen} />
 
-export default Layout
+        {/* Page Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardLayout;

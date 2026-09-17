@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./page/auth/login";
 import Register from "./page/auth/register";
-import OwnerDashboard from "./page/ownerDashboard/ownerDashboard"
+import OwnerDashboard from "./page/ownerDashboard/ownerDashboard";
+import ViewEmployee from "./page/ownerDashboard/employee";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/owner/dashboard" element={<OwnerDashboard />} />
+        <Route path="/owner/employees" element={<ViewEmployee />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

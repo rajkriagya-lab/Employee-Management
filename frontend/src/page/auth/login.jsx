@@ -34,7 +34,10 @@ const Login = () => {
       const { data } = await api.post("/auth/login", { email: email.trim(), password });
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/owner/dashboard", { replace: true });
+      const dashboardPath = ["OWNER", "ADMIN", "MANAGER"].includes(data.user?.role)
+        ? "/owner/dashboard"
+        : "/login";
+      navigate(dashboardPath, { replace: true });
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Unable to log in. Please check your credentials.");
     } finally {

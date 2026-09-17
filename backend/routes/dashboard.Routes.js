@@ -16,7 +16,7 @@ const router = express.Router();
 // =====================================================
 
 router.get(
-  "/owner",
+  "/admin",
   protect,
   authorize("OWNER", "ADMIN", "MANAGER"),
   getAdminDashboard
