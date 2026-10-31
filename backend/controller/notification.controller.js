@@ -14,7 +14,6 @@ export const createNotification = async (req, res) => {
             link,
         } = req.body;
 
-        // Validate required fields
         if (!userId || !title || !message) {
             return res.status(400).json({
                 success: false,
@@ -31,7 +30,6 @@ export const createNotification = async (req, res) => {
             });
         }
 
-        // Check user
         const user = await prisma.user.findUnique({
             where: {
                 id: userIdNumber,
@@ -45,7 +43,6 @@ export const createNotification = async (req, res) => {
             });
         }
 
-        // Allowed notification types
         const allowedTypes = [
             "GENERAL",
             "TASK",
@@ -64,7 +61,6 @@ export const createNotification = async (req, res) => {
             });
         }
 
-        // Create notification
         const notification =
             await prisma.notification.create({
                 data: {
@@ -91,10 +87,6 @@ export const createNotification = async (req, res) => {
     }
 };
 
-
-// =====================================================
-// GET MY NOTIFICATIONS
-// =====================================================
 
 export const getMyNotifications = async (req, res) => {
     try {
@@ -128,11 +120,6 @@ export const getMyNotifications = async (req, res) => {
         });
     }
 };
-
-
-// =====================================================
-// GET UNREAD NOTIFICATIONS
-// =====================================================
 
 export const getUnreadNotifications = async (req, res) => {
     try {
@@ -168,11 +155,6 @@ export const getUnreadNotifications = async (req, res) => {
     }
 };
 
-
-// =====================================================
-// GET UNREAD COUNT
-// =====================================================
-
 export const getUnreadCount = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -201,11 +183,6 @@ export const getUnreadCount = async (req, res) => {
     }
 };
 
-
-// =====================================================
-// GET NOTIFICATION BY ID
-// =====================================================
-
 export const getNotificationById = async (req, res) => {
     try {
         const notificationId = Number(req.params.id);
@@ -231,7 +208,6 @@ export const getNotificationById = async (req, res) => {
             });
         }
 
-        // User can only access their own notification
         if (notification.userId !== req.user.id) {
             return res.status(403).json({
                 success: false,
@@ -255,11 +231,6 @@ export const getNotificationById = async (req, res) => {
         });
     }
 };
-
-
-// =====================================================
-// MARK NOTIFICATION AS READ
-// =====================================================
 
 export const markAsRead = async (req, res) => {
     try {
@@ -286,7 +257,6 @@ export const markAsRead = async (req, res) => {
             });
         }
 
-        // Make sure notification belongs to logged-in user
         if (notification.userId !== req.user.id) {
             return res.status(403).json({
                 success: false,
@@ -326,10 +296,6 @@ export const markAsRead = async (req, res) => {
 };
 
 
-// =====================================================
-// MARK ALL AS READ
-// =====================================================
-
 export const markAllAsRead = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -364,11 +330,6 @@ export const markAllAsRead = async (req, res) => {
     }
 };
 
-
-// =====================================================
-// DELETE NOTIFICATION
-// =====================================================
-
 export const deleteNotification = async (req, res) => {
     try {
         const notificationId = Number(req.params.id);
@@ -394,7 +355,6 @@ export const deleteNotification = async (req, res) => {
             });
         }
 
-        // User can delete only their own notification
         if (notification.userId !== req.user.id) {
             return res.status(403).json({
                 success: false,
@@ -425,11 +385,6 @@ export const deleteNotification = async (req, res) => {
         });
     }
 };
-
-
-// =====================================================
-// DELETE ALL MY NOTIFICATIONS
-// =====================================================
 
 export const deleteAllNotifications = async (req, res) => {
     try {

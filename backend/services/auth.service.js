@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import prisma from "../db.js"
+import prisma from "../db.js";
 
 export const hashPassword = async (password) => {
     const salt = await bcrypt.genSalt(10);
@@ -21,15 +21,15 @@ export const generateToken = (user) => {
         },
         process.env.JWT_SECRET,
         {
-            expired:"7d",
+            expiresIn: "7d",
         }
     );
 };
 
-export const findUserByEmail = async (email) =>{
+export const findUserByEmail = async (email) => {
     return await prisma.user.findUnique({
         where:{
-            email: email.tolowerCase().trim(),
+            email: email.toLowerCase().trim(),
         },
     });
 };
@@ -49,7 +49,7 @@ export const findUserById = async (id) => {
             createdAt: true,
             updatedAt: true,
 
-            employeee: {
+            employee: {
                 include:{
                     department: true,
                 },
@@ -69,10 +69,15 @@ export const createUser = async ({
 
     return await prisma.user.create({
         data:{
-            nmae: name.trim,
-            email: email.tolowerCase().trim(),
+            name: name.trim(),
+            email: email.toLowerCase().trim(),
             password: hashedPassword,
             role,
+            ...(role === "EMPLOYEE" && {
+                employee: {
+                    create: {},
+                },
+            }),
         },
 
         select:{

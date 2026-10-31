@@ -10,6 +10,11 @@ import {
 
 import { protect } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/role.middleware.js";
+import validationMiddleware from "../middleware/validaton.middleware.js";
+import {
+  createEmployeeValidator,
+  updateEmployeeValidator,
+} from "../validator/employee.validayor.js";
 
 const router = express.Router();
 
@@ -34,6 +39,8 @@ router.post(
   "/",
   protect,
   authorize("OWNER", "ADMIN"),
+  createEmployeeValidator,
+  validationMiddleware,
   createEmployee
 );
 
@@ -42,6 +49,8 @@ router.put(
   "/:id",
   protect,
   authorize("OWNER", "ADMIN"),
+  updateEmployeeValidator,
+  validationMiddleware,
   updateEmployee
 );
 

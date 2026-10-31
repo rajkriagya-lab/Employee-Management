@@ -46,7 +46,7 @@ export const createTaskValidator = [
     ),
 ];
 
-export const upatedTaskValidator = [
+export const updateTaskValidator = [
     body("title")
     .optional()
     .trim()
@@ -101,6 +101,8 @@ export const upatedTaskValidator = [
       "Invalid due date"
     ),
 ];
+
+export const upatedTaskValidator = updateTaskValidator;
 
 export const updateTaskStatusValidator = [
     body("status")

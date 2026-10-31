@@ -4,22 +4,29 @@ import nodemailer from "nodemailer";
  * EMAIL TRANSPORTER
  */
 
-const transporter = nodemailer.createTrasporter({
-    host: proccess.env.SMTP_HOST,
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT) || 587,
 
     secure:
         process.env.SMTP_SECURE === "true",
 
-    auth: {
-        user: proccess.env.SMTP_USER,
-        pass: proccess.env.SMTP_PASSWORD,
-    },
+    auth: process.env.SMTP_USER && process.env.SMTP_PASSWORD
+      ? {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD,
+        }
+      : undefined,
 });
 
-/**
- * VERIFY EMAIL CONNECTION
- */
+const escapeHtml = (value) =>
+    String(value ?? "").replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+    })[character]);
 
 export const verifyEmailConnection = async () => {
     try {
@@ -46,10 +53,13 @@ export const sendEmail = async ({
         throw new Error("Recipient and subject are required");
     }
 
+    const from = process.env.EMAIL_FROM || process.env.SMTP_USER;
+    if (!from) {
+        throw new Error("EMAIL_FROM or SMTP_USER must be configured");
+    }
+
     const mail = await transporter.sendMail({
-        from:
-            proccess.env.EMAIL_FROM ||
-            process.env.SMTP_USER,
+        from,
 
         to,
 
@@ -63,14 +73,12 @@ export const sendEmail = async ({
     return mail;
 }
 
-/**
- * WELCOME MESSAGE
- */
 
 export const sendWelcomeEmail = async ({
     name,
     email,
 }) => {
+    const safeName = escapeHtml(name);
     return await sendEmail({
         to: email,
 
@@ -89,7 +97,7 @@ export const sendWelcomeEmail = async ({
         <div style="font-family: Arial, sans-serif;">
             <h2>Welcome to BizFlow</h2>
 
-        <p>Hello <strong>${name}</strong>,</p>
+        <p>Hello <strong>${safeName}</strong>,</p>
 
         <p>
           Your BizFlow account has been successfully created.
@@ -110,15 +118,23 @@ export const sendWelcomeEmail = async ({
     });
 };
 
-/**
- * PASSWORD RESET EMAIL
- */
 
 export const sendPasswordResetEmail = async ({
     name,
     email,
     resetLink,
 }) => {
+    const safeName = escapeHtml(name);
+    let safeResetLink;
+    try {
+        const url = new URL(resetLink);
+        if (url.protocol !== "https:" && url.protocol !== "http:") {
+            throw new Error("Reset link must use HTTP or HTTPS");
+        }
+        safeResetLink = escapeHtml(url.href);
+    } catch {
+        throw new Error("A valid HTTP or HTTPS reset link is required");
+    }
     return await sendEmail({
         to: email,
 
@@ -140,7 +156,7 @@ BizFlow Team`,
       <div style="font-family: Arial, sans-serif;">
         <h2>Password Reset</h2>
 
-        <p>Hello <strong>${name}</strong>,</p>
+        <p>Hello <strong>${safeName}</strong>,</p>
 
         <p>
           You requested a password reset for your
@@ -148,7 +164,7 @@ BizFlow Team`,
         </p>
 
         <p>
-          <a href="${resetLink}">
+          <a href="${safeResetLink}">
             Reset Password
           </a>
         </p>
@@ -166,9 +182,6 @@ BizFlow Team`,
     });
 }
 
-/**
- * TASK ASSIGNMENT EMAIL
- */
 
 export const sendTaskAssignment = async ({
     name,
@@ -176,10 +189,15 @@ export const sendTaskAssignment = async ({
     taskTitle,
     dueDate,
 }) => {
+    const safeName = escapeHtml(name);
+    const safeTaskTitle = escapeHtml(taskTitle);
+    const safeDueDate = dueDate
+      ? escapeHtml(new Date(dueDate).toLocaleDateString())
+      : "Not specified";
     return await sendEmail({
          to: email,
 
-    subject: `New Task Assigned: ${taskTitle}`,
+    subject: "New Task Assigned",
 
     text: `Hello ${name},
 
@@ -187,11 +205,7 @@ A new task has been assigned to you.
 
 Task: ${taskTitle}
 
-Due Date: ${
-      dueDate
-        ? new Date(dueDate).toLocaleDateString()
-        : "Not specified"
-    }
+Due Date: ${safeDueDate}
 
 Please log in to BizFlow to view the task.
 
@@ -201,23 +215,17 @@ BizFlow Team`,
       <div style="font-family: Arial, sans-serif;">
         <h2>New Task Assigned 📋</h2>
 
-        <p>Hello <strong>${name}</strong>,</p>
+        <p>Hello <strong>${safeName}</strong>,</p>
 
         <p>A new task has been assigned to you.</p>
 
         <p>
-          <strong>Task:</strong> ${taskTitle}
+          <strong>Task:</strong> ${safeTaskTitle}
         </p>
 
         <p>
           <strong>Due Date:</strong>
-          ${
-            dueDate
-              ? new Date(
-                  dueDate
-                ).toLocaleDateString()
-              : "Not specified"
-          }
+          ${safeDueDate}
         </p>
 
         <p>

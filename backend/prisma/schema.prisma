@@ -42,7 +42,7 @@ enum LeaveStatus {
 enum TaskStatus {
   TODO
   IN_PROGRESS
-  COMPLETE
+  COMPLETED @map("COMPLETE")
   CANCELLED
 }
 
@@ -54,7 +54,7 @@ enum TaskPriority {
 }
 
 enum NoticePriority {
-  LOLW
+  LOW
   NORMAL
   HIGH
   URGENT
@@ -82,7 +82,6 @@ model User {
 
   employee Employee?
 
-  // Tasks created/assigned by this user
   assignedTasks Task[]         @relation("AssignedTasks")
   notices       Notice[]       @relation("CreatedNotices")
   notifications Notification[]
@@ -107,9 +106,10 @@ model Employee {
 }
 
 model Department {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique
-  employees Employee[]
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  description String?
+  employees   Employee[]
 }
 
 model Attendance {
@@ -166,15 +166,14 @@ model Task {
   priority TaskPriority @default(MEDIUM)
   status   TaskStatus   @default(TODO)
 
-  dueDate    DateTime?
-  completeAt DateTime?
+  dueDate     DateTime?
+  completedAt DateTime? @map("completeAt")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   assignedByUser User     @relation("AssignedTasks", fields: [assignedBy], references: [id])
-  userId         Int
 
   @@index([employeeId])
   @@index([assignedBy])
@@ -195,7 +194,7 @@ model Notice {
   createdBy Int
 
   createdAt DateTime @default(now())
-  upatedAt  DateTime @updatedAt
+  updatedAt DateTime @updatedAt @map("upatedAt")
 
   createdByUser User @relation("CreatedNotices", fields: [createdBy], references: [id])
 
@@ -220,7 +219,7 @@ model Notification {
   link String?
 
   createdAt DateTime @default(now())
-  updateAt  DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

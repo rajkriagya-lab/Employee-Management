@@ -8,9 +8,9 @@ export const createNotification = async ({
     link = null,
 }) => {
     if (!userId || !title || !message) {
-        throw new Error("userId, title, and message are requried");
+        throw new Error("userId, title, and message are required");
     }
-    return await prisma.noitification.create({
+    return await prisma.notification.create({
         data: {
             userId: Number(userId),
             title: title.trim(),
@@ -25,7 +25,7 @@ export const createNotification = async ({
  * notify User
  */
 
-export const noitfyUser = async ({
+export const notifySingleUser = async ({
     userId,
     title,
     message,
@@ -41,20 +41,30 @@ export const noitfyUser = async ({
     });
 };
 
+export const noitfyUser = notifySingleUser;
+
 /**
  * NOTIFY MULTIPLE USER
  */
 
 
-export const notifyUser = async ({
+export const notifyUsers = async ({
     userIds,
     title,
     message,
     type = "GENERAL",
     link = null,
 }) => {
-    if (!Array.isArray(userIds) || userIds.lenght === 0) {
+    if (!Array.isArray(userIds)) {
+        throw new Error("userIds must be an array");
+    }
+
+    if (userIds.length === 0) {
         return [];
+    }
+
+    if (!title || !message) {
+        throw new Error("title and message are required");
     }
 
     const data = userIds.map((userId) => ({
@@ -72,17 +82,19 @@ export const notifyUser = async ({
     return data;
 };
 
+export const notifyUser = notifyUsers;
+
 /**
  * NOTIFY ALL EMPLOYEE
  */
 
-export const notifyAllEmpployee = async({
+export const notifyAllEmployees = async ({
     title,
     message,
     type = "GENERAL",
     link = null,
 }) => {
-    const employees = await prisma.user.findaMany({
+    const employees = await prisma.user.findMany({
         where: {
             role: "EMPLOYEE",
             isActive: true,
@@ -113,6 +125,8 @@ export const notifyAllEmpployee = async({
         count: employees.length,
     };
 };
+
+export const notifyAllEmpployee = notifyAllEmployees;
 
 /**
  * GET UNREAD COUNT

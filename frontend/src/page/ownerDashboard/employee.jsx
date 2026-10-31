@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Search,
   Plus,
   MoreVertical,
-  Eye,
   Pencil,
   Trash2,
   Mail,
@@ -13,19 +13,22 @@ import {
   UserX,
   BriefcaseBusiness,
   X,
-  Loader2,
   ChevronLeft,
   ChevronRight,
   Filter,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/layout/owner/layout";
+import api from "../../api/axios";
+import EmployeeFormModal from "./EmployeeFormModal";
+import { getStoredUser } from "../../utils/auth";
+import { canManagePeople } from "../../utils/navigation";
 
 const ViewEmployee = () => {
-  const navigate = useNavigate();
-
+  const canManageEmployees = canManagePeople(getStoredUser()?.role);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
@@ -33,6 +36,9 @@ const ViewEmployee = () => {
 
   const [activeMenu, setActiveMenu] = useState(null);
   const [deleteEmployee, setDeleteEmployee] = useState(null);
+  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -40,45 +46,20 @@ const ViewEmployee = () => {
 
   /*
    * =====================================================
-   * GET TOKEN
-   * =====================================================
-   */
-
-  const getToken = () => {
-    return (
-      localStorage.getItem("token") ||
-      sessionStorage.getItem("token")
-    );
-  };
-
-  /*
-   * =====================================================
    * FETCH EMPLOYEES
    * =====================================================
    */
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
+      setLoadError("");
 
-      const token = getToken();
+      const { data } = await api.get("/employees");
 
-      const response = await fetch(
-        "http://localhost:8000/api/users",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
+      if (!data?.success) {
         throw new Error("Failed to fetch employees");
       }
-
-      const data = await response.json();
 
       const employeeData =
         data.users ||
@@ -88,7 +69,18 @@ const ViewEmployee = () => {
 
       setEmployees(
         Array.isArray(employeeData)
-          ? employeeData
+          ? employeeData.map((employee) => ({
+              ...employee,
+              employeeId: employee.employee?.id,
+              phone: employee.employee?.phone,
+              address: employee.employee?.address,
+              position: employee.employee?.position,
+              departmentId: employee.employee?.departmentId,
+              joiningDate: employee.employee?.joiningDate,
+              salary: employee.employee?.salary,
+              status: employee.isActive === false ? "INACTIVE" : "ACTIVE",
+              department: employee.employee?.department ?? null,
+            }))
           : []
       );
     } catch (error) {
@@ -98,12 +90,17 @@ const ViewEmployee = () => {
       );
 
       setEmployees([]);
+      setLoadError(
+        error.response?.data?.message ||
+        "Unable to load employees. Please try again."
+      );
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchEmployees();
   }, []);
 
@@ -139,18 +136,14 @@ const ViewEmployee = () => {
   const formatDate = (date) => {
     if (!date) return "—";
 
-    try {
-      return new Date(date).toLocaleDateString(
-        "en-US",
-        {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }
-      );
-    } catch {
-      return "—";
-    }
+    const parsedDate = new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) return "—";
+
+    return parsedDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   /*
@@ -172,8 +165,8 @@ const ViewEmployee = () => {
         employee.email
           ?.toLowerCase()
           .includes(searchValue) ||
-        employee.employeeId
-          ?.toLowerCase()
+        String(employee.employeeId ?? "")
+          .toLowerCase()
           .includes(searchValue) ||
         employee.id
           ?.toString()
@@ -188,8 +181,7 @@ const ViewEmployee = () => {
         employeeRole === roleFilter;
 
       const employeeStatus =
-        employee.status?.toUpperCase() ||
-        "ACTIVE";
+        employee.isActive === false ? "INACTIVE" : "ACTIVE";
 
       const matchesStatus =
         statusFilter === "ALL" ||
@@ -238,20 +230,13 @@ const ViewEmployee = () => {
     if (!deleteEmployee) return;
 
     try {
-      const token = getToken();
-
-      const response = await fetch(
-        `http://localhost:5000/api/users/${deleteEmployee.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+      setDeleting(true);
+      setActionError("");
+      const { data } = await api.delete(
+        `/employees/${deleteEmployee.id}`
       );
 
-      if (!response.ok) {
+      if (!data?.success) {
         throw new Error(
           "Failed to delete employee"
         );
@@ -264,6 +249,17 @@ const ViewEmployee = () => {
             deleteEmployee.id
         )
       );
+      setCurrentPage((page) =>
+        Math.min(
+          page,
+          Math.max(
+            1,
+            Math.ceil(
+              (filteredEmployees.length - 1) / employeesPerPage
+            )
+          )
+        )
+      );
 
       setDeleteEmployee(null);
       setActiveMenu(null);
@@ -273,9 +269,13 @@ const ViewEmployee = () => {
         error
       );
 
-      alert(
-        "Unable to delete employee."
+      setActionError(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to delete employee."
       );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -290,24 +290,17 @@ const ViewEmployee = () => {
 
   const activeEmployees =
     employees.filter(
-      (employee) =>
-        !employee.status ||
-        employee.status.toUpperCase() ===
-        "ACTIVE"
+      (employee) => employee.isActive !== false
     ).length;
 
   const inactiveEmployees =
     employees.filter(
-      (employee) =>
-        employee.status?.toUpperCase() ===
-        "INACTIVE"
+      (employee) => employee.isActive === false
     ).length;
 
-  const managers =
+  const assignedEmployees =
     employees.filter(
-      (employee) =>
-        employee.role?.toUpperCase() ===
-        "MANAGER"
+      (employee) => Boolean(employee.department)
     ).length;
 
   /*
@@ -377,6 +370,22 @@ const ViewEmployee = () => {
               </h1>
             </div>
 
+            {loadError && (
+              <div
+                role="alert"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300"
+              >
+                <span>{loadError}</span>
+                {canManageEmployees && <button
+                  type="button"
+                  onClick={fetchEmployees}
+                  className="font-semibold underline underline-offset-2"
+                >
+                  Retry
+                </button>}
+              </div>
+            )}
+
             <p className="mt-1 text-sm text-muted">
               Manage your organization's
               employees and workforce.
@@ -384,9 +393,11 @@ const ViewEmployee = () => {
           </div>
 
           <button
-            onClick={() =>
-              navigate("/owner/employees/add")
-            }
+            onClick={() => {
+              setEditingEmployee(null);
+              setShowEmployeeForm(true);
+              setActionError("");
+            }}
             className="
             inline-flex
             items-center
@@ -410,6 +421,15 @@ const ViewEmployee = () => {
             Add Employee
           </button>
         </div>
+
+        {actionError && (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300"
+          >
+            {actionError}
+          </div>
+        )}
 
         {/* =================================================
           STAT CARDS
@@ -577,7 +597,7 @@ const ViewEmployee = () => {
 
               <div>
                 <p className="text-sm text-muted">
-                  Managers
+                  With Department
                 </p>
 
                 <h2
@@ -588,7 +608,7 @@ const ViewEmployee = () => {
                   mt-1
                 "
                 >
-                  {managers}
+                  {assignedEmployees}
                 </h2>
               </div>
 
@@ -950,17 +970,20 @@ const ViewEmployee = () => {
                             </div>
 
                             <div className="min-w-0">
-                              <p
+                              <Link
+                                to={`/owner/employees/${employee.id}`}
                                 className="
+                                block
                                 text-sm
                                 font-semibold
                                 text-text
                                 truncate
+                                hover:text-btn
                               "
                               >
                                 {employee.name ||
                                   "Unknown"}
-                              </p>
+                              </Link>
 
                               <p
                                 className="
@@ -1112,9 +1135,11 @@ const ViewEmployee = () => {
                         {/* Actions */}
                         <td className="px-5 py-4">
 
-                          <div className="relative">
+                          {canManageEmployees && <div className="relative">
 
                             <button
+                              type="button"
+                              aria-label={`Employee actions for ${employee.name || "employee"}`}
                               onClick={() =>
                                 setActiveMenu(
                                   activeMenu ===
@@ -1159,35 +1184,12 @@ const ViewEmployee = () => {
                                 >
 
                                   <button
-                                    onClick={() =>
-                                      navigate(
-                                        `/employees/${employee.id}`
-                                      )
-                                    }
-                                    className="
-                                  w-full
-                                  flex
-                                  items-center
-                                  gap-2.5
-                                  px-3
-                                  py-2.5
-                                  rounded-lg
-                                  text-sm
-                                  text-text
-                                  hover:bg-background
-                                "
-                                  >
-                                    <Eye size={16} />
-
-                                    View
-                                  </button>
-
-                                  <button
-                                    onClick={() =>
-                                      navigate(
-                                        `/employees/${employee.id}/edit`
-                                      )
-                                    }
+                                    onClick={() => {
+                                      setEditingEmployee(employee);
+                                      setShowEmployeeForm(true);
+                                      setActiveMenu(null);
+                                      setActionError("");
+                                    }}
                                     className="
                                   w-full
                                   flex
@@ -1235,7 +1237,7 @@ const ViewEmployee = () => {
                                 </div>
                               )}
 
-                          </div>
+                          </div>}
 
                         </td>
 
@@ -1419,7 +1421,7 @@ const ViewEmployee = () => {
                         </div>
 
                         {/* Mobile Actions */}
-                        {activeMenu === employee.id && (
+                        {canManageEmployees && activeMenu === employee.id && (
                           <div
                             className="
                             mt-3
@@ -1431,37 +1433,12 @@ const ViewEmployee = () => {
                           "
                           >
                             <button
-                              onClick={() =>
-                                navigate(
-                                  `/employees/${employee.id}`
-                                )
-                              }
-                              className="
-                              flex-1
-                              flex
-                              items-center
-                              justify-center
-                              gap-2
-                              py-2
-                              rounded-lg
-                              bg-background
-                              border
-                              border-border
-                              text-sm
-                              text-text
-                            "
-                            >
-                              <Eye size={15} />
-
-                              View
-                            </button>
-
-                            <button
-                              onClick={() =>
-                                navigate(
-                                  `/employees/${employee.id}/edit`
-                                )
-                              }
+                              onClick={() => {
+                                setEditingEmployee(employee);
+                                setShowEmployeeForm(true);
+                                setActiveMenu(null);
+                                setActionError("");
+                              }}
                               className="
                               flex-1
                               flex
@@ -1679,10 +1656,25 @@ const ViewEmployee = () => {
         </div>
 
         {/* =================================================
+          CREATE / EDIT EMPLOYEE MODAL
+      ================================================= */}
+
+        {canManageEmployees && showEmployeeForm && (
+          <EmployeeFormModal
+            employee={editingEmployee}
+            onClose={() => {
+              setShowEmployeeForm(false);
+              setEditingEmployee(null);
+            }}
+            onSaved={() => fetchEmployees(false)}
+          />
+        )}
+
+        {/* =================================================
           DELETE MODAL
       ================================================= */}
 
-        {deleteEmployee && (
+        {canManageEmployees && deleteEmployee && (
           <div
             className="
             fixed
@@ -1767,9 +1759,11 @@ const ViewEmployee = () => {
               "
               >
                 <button
+                  type="button"
                   onClick={() =>
                     setDeleteEmployee(null)
                   }
+                  disabled={deleting}
                   className="
                   px-4
                   py-2.5
@@ -1786,7 +1780,9 @@ const ViewEmployee = () => {
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleDelete}
+                  disabled={deleting}
                   className="
                   px-4
                   py-2.5
@@ -1798,7 +1794,7 @@ const ViewEmployee = () => {
                   hover:bg-red-700
                 "
                 >
-                  Delete Employee
+                  {deleting ? "Deleting..." : "Delete Employee"}
                 </button>
               </div>
 

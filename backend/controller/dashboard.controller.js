@@ -29,9 +29,7 @@ export const getAdminDashboard = async (
 
     return res.status(500).json({
       success: false,
-      message:
-        error.message ||
-        "Failed to load dashboard",
+      message: "Failed to load dashboard",
     });
   }
 };
@@ -62,11 +60,14 @@ export const getEmployeeDashboard = async (
       error
     );
 
-    return res.status(500).json({
+    const employeeNotFound =
+      error.message === "Employee profile not found";
+
+    return res.status(employeeNotFound ? 404 : 500).json({
       success: false,
-      message:
-        error.message ||
-        "Failed to load employee dashboard",
+      message: employeeNotFound
+        ? error.message
+        : "Failed to load employee dashboard",
     });
   }
 };

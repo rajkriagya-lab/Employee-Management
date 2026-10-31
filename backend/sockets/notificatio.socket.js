@@ -1,62 +1,85 @@
+import jwt from "jsonwebtoken";
+import prisma from "../db.js";
+
 const onlineUsers = new Map();
 
 export const setupNotifiactionSocket = (io) => {
-    io.on("connection", (socket) => {
-        console.log(`Socket connected: ${socket.id}`);
+    io.use(async (socket, next) => {
+        const header = socket.handshake.headers.authorization;
+        const authorizationToken =
+            typeof header === "string" && header.match(/^Bearer\s+(.+)$/i)?.[1];
+        const token = socket.handshake.auth?.token || authorizationToken;
 
-        socket.on("user-online", (userId) => {
-            if (!userId) return;
+        if (typeof token !== "string" || !token) {
+            return next(new Error("Authentication required"));
+        }
 
-            const id = Number(userId);
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+        } catch {
+            return next(new Error("Invalid or expired token"));
+        }
 
-            onlineUsers.set(id, socket.id);
+        if (
+            !decoded ||
+            typeof decoded !== "object" ||
+            !Number.isInteger(decoded.id)
+        ) {
+            return next(new Error("Invalid or expired token"));
+        }
 
-            socket.userId = id;
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: decoded.id },
+                select: { id: true, isActive: true },
+            });
 
-            console.log(`user${id} is online`);
-        });
-
-        socket.on(
-            "notification-read",
-            (notificationId) => {
-                console.log(
-                    `Notification ${notificationId} read by user ${socket.userId}`
-                );
+            if (!user || !user.isActive) {
+                return next(new Error("Account is unavailable"));
             }
-        );
+
+            socket.data.userId = user.id;
+            return next();
+        } catch (error) {
+            console.error("Socket authentication failed:", error);
+            return next(new Error("Unable to authenticate"));
+        }
+    });
+
+    io.on("connection", (socket) => {
+        const userId = socket.data.userId;
+        const userSockets = onlineUsers.get(userId) || new Set();
+        userSockets.add(socket.id);
+        onlineUsers.set(userId, userSockets);
+
+        socket.join(`user:${userId}`);
 
         socket.on("disconnect", () => {
-            if (socket.userId) {
-                onlineUsers.delete(socket.userId);
-
-                console.log(
-                    `User ${socket.userId} disconnected`
-                );
+            const sockets = onlineUsers.get(userId);
+            if (sockets) {
+                sockets.delete(socket.id);
+                if (sockets.size === 0) {
+                    onlineUsers.delete(userId);
+                }
             }
-
-            console.log(
-                `Socket disconnected: ${socket.id}`
-            );
         });
     });
 };
 
-/**
- * SEND NOTIFICATION TO ONE USER
- */
 
 export const sendNotificationToUser = (
     io,
     userId,
     notification
 ) => {
-    const socketId = onlineUsers.get(Number(userId));
+    const sockets = onlineUsers.get(Number(userId));
 
-    if (!socketId) {
+    if (!sockets?.size) {
         return false;
     }
 
-    io.to(socketId).emit(
+    io.to(`user:${Number(userId)}`).emit(
         "new-notification",
         notification
     );
@@ -64,9 +87,6 @@ export const sendNotificationToUser = (
     return true;
 };
 
-/**
- * SEND NOTIFICATION TO MULTIPLE USER
- */
 
 export const sendNotificationToUsers = (
     io,
@@ -90,9 +110,6 @@ export const sendNotificationToUsers = (
     return sentCount;
 };
 
-/**
- * SEND NOTIFICATION TO ALL ONLINE USERS
- */
 
 export const sendNotificationToAll = (
     io,
@@ -104,9 +121,6 @@ export const sendNotificationToAll = (
     );
 };
 
-/**
- * GET ONLINE USER COUNT
- */
 
 export const getOnlineUserCount = () => {
     return onlineUsers.size;

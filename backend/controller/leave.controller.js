@@ -1,9 +1,5 @@
 import prisma from "../db.js";
 
-// =====================================================
-// APPLY FOR LEAVE
-// =====================================================
-
 export const applyLeave = async (req, res) => {
     try {
         const {
@@ -13,7 +9,6 @@ export const applyLeave = async (req, res) => {
             reason,
         } = req.body;
 
-        // Get logged-in employee
         const employeeId = req.user.employee?.id;
 
         if (!employeeId) {
@@ -23,7 +18,6 @@ export const applyLeave = async (req, res) => {
             });
         }
 
-        // Validate required fields
         if (!startDate || !endDate || !leaveType) {
             return res.status(400).json({
                 success: false,
@@ -42,7 +36,6 @@ export const applyLeave = async (req, res) => {
             });
         }
 
-        // Make sure end date isn't before start date
         if (end < start) {
             return res.status(400).json({
                 success: false,
@@ -50,7 +43,6 @@ export const applyLeave = async (req, res) => {
             });
         }
 
-        // Allowed leave types
         const allowedLeaveTypes = [
             "CASUAL",
             "SICK",
@@ -68,7 +60,6 @@ export const applyLeave = async (req, res) => {
             });
         }
 
-        // Check overlapping leave requests
         const overlappingLeave =
             await prisma.leave.findFirst({
                 where: {
@@ -96,7 +87,6 @@ export const applyLeave = async (req, res) => {
             });
         }
 
-        // Create leave
         const leave = await prisma.leave.create({
             data: {
                 employeeId,
@@ -137,11 +127,6 @@ export const applyLeave = async (req, res) => {
     }
 };
 
-
-// =====================================================
-// GET MY LEAVES
-// =====================================================
-
 export const getMyLeaves = async (req, res) => {
     try {
         const employeeId = req.user.employee?.id;
@@ -178,11 +163,6 @@ export const getMyLeaves = async (req, res) => {
     }
 };
 
-
-// =====================================================
-// GET ALL LEAVES
-// =====================================================
-
 export const getAllLeaves = async (req, res) => {
     try {
         const {
@@ -193,7 +173,6 @@ export const getAllLeaves = async (req, res) => {
 
         const where = {};
 
-        // Filter by status
         if (status) {
             const allowedStatuses = [
                 "PENDING",
@@ -212,12 +191,10 @@ export const getAllLeaves = async (req, res) => {
             where.status = status;
         }
 
-        // Filter by leave type
         if (leaveType) {
             where.leaveType = leaveType;
         }
 
-        // Filter by employee
         if (employeeId) {
             const id = Number(employeeId);
 
@@ -278,11 +255,6 @@ export const getAllLeaves = async (req, res) => {
     }
 };
 
-
-// =====================================================
-// GET LEAVE BY ID
-// =====================================================
-
 export const getLeaveById = async (req, res) => {
     try {
         const leaveId = Number(req.params.id);
@@ -342,11 +314,6 @@ export const getLeaveById = async (req, res) => {
     }
 };
 
-
-// =====================================================
-// APPROVE LEAVE
-// =====================================================
-
 export const approveLeave = async (req, res) => {
     try {
         const leaveId = Number(req.params.id);
@@ -371,7 +338,6 @@ export const approveLeave = async (req, res) => {
             });
         }
 
-        // Only pending leave can be approved
         if (leave.status !== "PENDING") {
             return res.status(400).json({
                 success: false,
@@ -420,11 +386,6 @@ export const approveLeave = async (req, res) => {
         });
     }
 };
-
-
-// =====================================================
-// REJECT LEAVE
-// =====================================================
 
 export const rejectLeave = async (req, res) => {
     try {
@@ -503,11 +464,6 @@ export const rejectLeave = async (req, res) => {
     }
 };
 
-
-// =====================================================
-// CANCEL LEAVE
-// =====================================================
-
 export const cancelLeave = async (req, res) => {
     try {
         const leaveId = Number(req.params.id);
@@ -534,7 +490,6 @@ export const cancelLeave = async (req, res) => {
             });
         }
 
-        // Employee can cancel only their own leave
         if (leave.employeeId !== employeeId) {
             return res.status(403).json({
                 success: false,
@@ -543,7 +498,6 @@ export const cancelLeave = async (req, res) => {
             });
         }
 
-        // Don't cancel rejected/cancelled leave
         if (
             leave.status === "REJECTED" ||
             leave.status === "CANCELLED"
@@ -579,11 +533,6 @@ export const cancelLeave = async (req, res) => {
     }
 };
 
-
-// =====================================================
-// UPDATE LEAVE
-// =====================================================
-
 export const updateLeave = async (req, res) => {
     try {
         const leaveId = Number(req.params.id);
@@ -615,7 +564,13 @@ export const updateLeave = async (req, res) => {
             });
         }
 
-        // Only pending leave can be edited
+        if (leave.employeeId !== req.user.employee?.id) {
+            return res.status(403).json({
+                success: false,
+                message: "You can only update your own leave request",
+            });
+        }
+
         if (leave.status !== "PENDING") {
             return res.status(400).json({
                 success: false,
@@ -633,6 +588,16 @@ export const updateLeave = async (req, res) => {
 
         if (endDate) {
             end = new Date(endDate);
+        }
+
+        if (
+            Number.isNaN(start.getTime()) ||
+            Number.isNaN(end.getTime())
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid date",
+            });
         }
 
         if (end < start) {

@@ -14,6 +14,11 @@ import {
 
 import { protect } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/role.middleware.js";
+import validationMiddleware from "../middleware/validaton.middleware.js";
+import {
+    createLeaveVaildators,
+    updateLeaveValidator,
+} from "../validator/leave.vaildator.js";
 
 const router = express.Router();
 
@@ -27,6 +32,8 @@ router.post(
     "/",
     protect,
     authorize("EMPLOYEE"),
+    createLeaveVaildators,
+    validationMiddleware,
     applyLeave
 );
 
@@ -43,6 +50,8 @@ router.put(
     "/:id",
     protect,
     authorize("EMPLOYEE"),
+    updateLeaveValidator,
+    validationMiddleware,
     updateLeave
 );
 

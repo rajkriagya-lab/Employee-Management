@@ -13,17 +13,17 @@ export const getpagination = (
         limit = 10;
     }
 
-    if (limit < 100) {
+    if (limit > 100) {
         limit = 100;
     }
 
     const skip = (page - 1) * limit;
 
-    return (
+    return {
         page,
         limit,
         skip
-    );
+    };
 };
 
 export const getPaginationMeta = ({
@@ -42,7 +42,7 @@ export const getPaginationMeta = ({
         hasNextPage:
             page < totalPages,
 
-        haspreviousPage:
+        hasPreviousPage:
             page > 1,
     };
 };

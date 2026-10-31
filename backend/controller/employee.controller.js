@@ -79,7 +79,10 @@ export const createEmployee = async (req, res) => {
                         joiningDate: joiningDate
                             ? new Date(joiningDate)
                             : null,
-                        salary: salary ? Number(salary) : null,
+                        salary:
+                            salary === undefined || salary === null || salary === ""
+                                ? null
+                                : Number(salary),
                     },
                 },
             },
@@ -87,7 +90,12 @@ export const createEmployee = async (req, res) => {
             include: {
                 employee: {
                     include: {
-                        department: true,
+                        department: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
                     },
                 },
             },
@@ -134,7 +142,12 @@ export const getEmployees = async (req, res) => {
 
                 employee: {
                     include: {
-                        department: true,
+                        department: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
                     },
                 },
             },
@@ -186,7 +199,12 @@ export const getEmployeeById = async (req, res) => {
 
                 employee: {
                     include: {
-                        department: true,
+                        department: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
                     },
                 },
             },
@@ -331,7 +349,10 @@ export const updateEmployee = async (req, res) => {
                         }),
 
                         ...(salary !== undefined && {
-                            salary: salary ? Number(salary) : null,
+                            salary:
+                                salary === null || salary === ""
+                                    ? null
+                                    : Number(salary),
                         }),
                     },
                 },
@@ -348,7 +369,12 @@ export const updateEmployee = async (req, res) => {
 
                 employee: {
                     include: {
-                        department: true,
+                        department: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
                     },
                 },
             },

@@ -42,6 +42,37 @@ export const createLeaveVaildators = [
     ),
 ];
 
+export const updateLeaveValidator = [
+  body("startDate")
+    .optional()
+    .isISO8601()
+    .withMessage("Start date must be valid"),
+
+  body("endDate")
+    .optional()
+    .isISO8601()
+    .withMessage("End date must be valid"),
+
+  body("leaveType")
+    .optional()
+    .isIn([
+      "CASUAL",
+      "SICK",
+      "ANNUAL",
+      "MATERNITY",
+      "PATERNITY",
+      "UNPAID",
+      "OTHER",
+    ])
+    .withMessage("Invalid leave type"),
+
+  body("reason")
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage("Reason cannot exceed 1000 characters"),
+];
+
 export const reviewLeaveValidtor = [
      body("status")
     .notEmpty()

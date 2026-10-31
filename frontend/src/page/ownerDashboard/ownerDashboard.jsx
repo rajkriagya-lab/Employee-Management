@@ -1,927 +1,467 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-    Users,
-    Wallet,
-    Clock3,
-    CreditCard,
-    TrendingUp,
-    UserPlus,
-    ArrowUpRight,
-    ArrowDownLeft,
-    MoreHorizontal,
-    RefreshCw,
-    AlertCircle,
-    Loader2,
+  ArrowRight,
+  Building2,
+  CalendarCheck,
+  CheckCheck,
+  ClipboardList,
+  Clock3,
+  CreditCard,
+  Megaphone,
+  RefreshCw,
+  Users,
 } from "lucide-react";
-
+import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import Layout from "../../components/layout/owner/layout";
-
-const Dashboard = () => {
-    const [dashboard, setDashboard] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState("");
-
-    const user = (() => {
-        const storedUser =
-            localStorage.getItem("user") ||
-            sessionStorage.getItem("user");
-
-        try {
-            return storedUser ? JSON.parse(storedUser) : null;
-        } catch {
-            return null;
-        }
-    })();
-
-    const fetchDashboard = async (isRefresh = false) => {
-        try {
-            if (isRefresh) {
-                setRefreshing(true);
-            } else {
-                setLoading(true);
-            }
-
-            setError("");
-
-            /*
-              Change this endpoint if your backend uses
-              a different dashboard route.
-      
-              Expected:
-              GET /api/dashboard/admin
-            */
-            const response = await api.get("/dashboard/admin");
-
-            if (!response.data?.success) {
-                throw new Error(
-                    response.data?.message ||
-                    "Unable to load dashboard"
-                );
-            }
-
-            const dashboardData = response.data.dashboard || {};
-            const overview = dashboardData.overview || {};
-
-            setDashboard({
-                stats: {
-                    totalMembers: overview.totalEmployees ?? overview.totalUsers ?? 0,
-                    totalSavings: 0,
-                    pendingAmount: overview.pendingLeaves ?? 0,
-                    monthlyPayments: 0,
-                },
-                recentMembers: dashboardData.recentEmployees || [],
-                recentTransactions: dashboardData.recentPayrolls || [],
-                monthlySavings: [],
-                monthlyPayments: [],
-            });
-        } catch (err) {
-            console.error("Dashboard error:", err);
-
-            setError(
-                err.response?.data?.message ||
-                err.message ||
-                "Unable to load dashboard data."
-            );
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    };
-
-    useEffect(() => {
-        // Load the dashboard data once after the page mounts.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchDashboard();
-    }, []);
-
-    const formatCurrency = (amount = 0) => {
-        return `रू ${Number(amount).toLocaleString("en-IN")}`;
-    };
-
-    const formatDate = (date) => {
-        if (!date) return "-";
-
-        return new Date(date).toLocaleDateString("en-NP", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        });
-    };
-
-    const getInitials = (name = "") => {
-        return name
-            .split(" ")
-            .map((word) => word[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase();
-    };
-
-    /*
-    |--------------------------------------------------------------------------
-    | Loading
-    |--------------------------------------------------------------------------
-    */
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex items-center justify-center min-h-[70vh]">
-                        <div className="flex flex-col items-center gap-3">
-                            <Loader2
-                                size={32}
-                                className="animate-spin text-btn"
-                            />
-
-                            <p className="text-sm text-muted">
-                                Loading dashboard...
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Error
-    |--------------------------------------------------------------------------
-    */
-
-    if (error && !dashboard) {
-        return (
-            <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-                <div className="max-w-7xl mx-auto">
-                    <div className="min-h-[70vh] flex items-center justify-center">
-                        <div className="max-w-md w-full bg-surface border border-border rounded-xl p-6 text-center">
-                            <div className="w-12 h-12 mx-auto rounded-lg bg-danger/10 flex items-center justify-center">
-                                <AlertCircle
-                                    size={24}
-                                    className="text-danger"
-                                />
-                            </div>
-
-                            <h2 className="mt-4 text-lg font-semibold text-text">
-                                Unable to load dashboard
-                            </h2>
-
-                            <p className="mt-2 text-sm text-muted">
-                                {error}
-                            </p>
-
-                            <button
-                                onClick={() => fetchDashboard()}
-                                className="mt-5 inline-flex items-center gap-2 px-4 py-2.5 bg-btn text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-                            >
-                                <RefreshCw size={16} />
-                                Try Again
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Safe dashboard data
-    |--------------------------------------------------------------------------
-    */
-
-    const stats = dashboard?.stats || {};
-
-    const members = dashboard?.recentMembers || [];
-
-    const transactions =
-        dashboard?.recentTransactions || [];
-
-    const monthlySavings =
-        dashboard?.monthlySavings || [];
-
-    const monthlyPayments =
-        dashboard?.monthlyPayments || [];
-
-    return (
-        <Layout>
-            <div className="min-h-screen bg-background">
-                <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-
-                    {/* =========================================================
-            HEADER
-        ========================================================= */}
-
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-
-                        <div>
-                            <p className="text-sm text-muted">
-                                Owner Dashboard
-                            </p>
-
-                            <h1 className="text-2xl sm:text-3xl font-bold text-text mt-1">
-                                Welcome back, {user?.name || "Owner"}
-                            </h1>
-
-                            <p className="text-sm text-muted mt-2">
-                                Here's what's happening with your organization.
-                            </p>
-                        </div>
-
-                        <button
-                            onClick={() => fetchDashboard(true)}
-                            disabled={refreshing}
-                            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 bg-surface border border-border text-text rounded-lg text-sm font-medium hover:bg-background transition disabled:opacity-60"
-                        >
-                            <RefreshCw
-                                size={16}
-                                className={
-                                    refreshing
-                                        ? "animate-spin"
-                                        : ""
-                                }
-                            />
-
-                            {refreshing
-                                ? "Refreshing..."
-                                : "Refresh"}
-                        </button>
-                    </div>
-
-                    {/* =========================================================
-            ERROR MESSAGE
-        ========================================================= */}
-
-                    {error && (
-                        <div className="mb-6 flex items-center gap-3 p-4 bg-danger/10 border border-danger/20 rounded-lg">
-                            <AlertCircle
-                                size={18}
-                                className="text-danger shrink-0"
-                            />
-
-                            <p className="text-sm text-danger">
-                                {error}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* =========================================================
-            STATS
-        ========================================================= */}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-
-                        {/* Members */}
-
-                        <div className="bg-surface border border-border rounded-xl p-5">
-                            <div className="flex items-start justify-between">
-
-                                <div>
-                                    <p className="text-sm text-muted">
-                                        Total Members
-                                    </p>
-
-                                    <h2 className="text-2xl font-bold text-text mt-2">
-                                        {stats.totalMembers ?? 0}
-                                    </h2>
-                                </div>
-
-                                <div className="w-10 h-10 rounded-lg bg-btn/10 flex items-center justify-center">
-                                    <Users
-                                        size={20}
-                                        className="text-btn"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="mt-4 flex items-center gap-2 text-xs text-muted">
-                                <UserPlus size={14} />
-                                <span>
-                                    Active members in organization
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Savings */}
-
-                        <div className="bg-surface border border-border rounded-xl p-5">
-                            <div className="flex items-start justify-between">
-
-                                <div>
-                                    <p className="text-sm text-muted">
-                                        Total Savings
-                                    </p>
-
-                                    <h2 className="text-2xl font-bold text-text mt-2">
-                                        {formatCurrency(
-                                            stats.totalSavings
-                                        )}
-                                    </h2>
-                                </div>
-
-                                <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-                                    <Wallet
-                                        size={20}
-                                        className="text-success"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="mt-4 flex items-center gap-2 text-xs text-success">
-                                <TrendingUp size={14} />
-                                <span>
-                                    Current organization savings
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Pending */}
-
-                        <div className="bg-surface border border-border rounded-xl p-5">
-                            <div className="flex items-start justify-between">
-
-                                <div>
-                                    <p className="text-sm text-muted">
-                                        Pending Amount
-                                    </p>
-
-                                    <h2 className="text-2xl font-bold text-text mt-2">
-                                        {formatCurrency(
-                                            stats.pendingAmount
-                                        )}
-                                    </h2>
-                                </div>
-
-                                <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                                    <Clock3
-                                        size={20}
-                                        className="text-warning"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="mt-4 flex items-center gap-2 text-xs text-warning">
-                                <Clock3 size={14} />
-                                <span>
-                                    Awaiting payment
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Payments */}
-
-                        <div className="bg-surface border border-border rounded-xl p-5">
-                            <div className="flex items-start justify-between">
-
-                                <div>
-                                    <p className="text-sm text-muted">
-                                        Monthly Payments
-                                    </p>
-
-                                    <h2 className="text-2xl font-bold text-text mt-2">
-                                        {formatCurrency(
-                                            stats.monthlyPayments
-                                        )}
-                                    </h2>
-                                </div>
-
-                                <div className="w-10 h-10 rounded-lg bg-btn/10 flex items-center justify-center">
-                                    <CreditCard
-                                        size={20}
-                                        className="text-btn"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="mt-4 flex items-center gap-2 text-xs text-btn">
-                                <TrendingUp size={14} />
-                                <span>
-                                    Payments this month
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* =========================================================
-            CHART SECTION
-        ========================================================= */}
-
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-
-                        {/* Savings */}
-
-                        <div className="bg-surface border border-border rounded-xl p-5">
-
-                            <div className="flex items-center justify-between mb-6">
-
-                                <div>
-                                    <h2 className="font-semibold text-text">
-                                        Savings Overview
-                                    </h2>
-
-                                    <p className="text-xs text-muted mt-1">
-                                        Monthly savings collection
-                                    </p>
-                                </div>
-
-                                <Wallet
-                                    size={19}
-                                    className="text-muted"
-                                />
-                            </div>
-
-                            {monthlySavings.length === 0 ? (
-                                <div className="h-56 flex items-center justify-center">
-                                    <p className="text-sm text-muted">
-                                        No savings data available.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="h-56 flex items-end gap-3 overflow-x-auto pb-6">
-
-                                    {monthlySavings.map(
-                                        (item, index) => {
-
-                                            const values =
-                                                monthlySavings.map(
-                                                    (entry) =>
-                                                        Number(entry.amount) || 0
-                                                );
-
-                                            const maxValue =
-                                                Math.max(...values, 1);
-
-                                            const height =
-                                                ((Number(item.amount) ||
-                                                    0) /
-                                                    maxValue) *
-                                                100;
-
-                                            return (
-                                                <div
-                                                    key={
-                                                        item.month ||
-                                                        index
-                                                    }
-                                                    className="min-w-[48px] flex-1 h-full flex flex-col justify-end items-center gap-2"
-                                                >
-
-                                                    <div className="text-[10px] text-muted">
-                                                        {formatCurrency(
-                                                            item.amount
-                                                        )}
-                                                    </div>
-
-                                                    <div
-                                                        className="w-full max-w-[42px] bg-btn rounded-t-md transition-all"
-                                                        style={{
-                                                            height: `${Math.max(
-                                                                height,
-                                                                4
-                                                            )}%`,
-                                                        }}
-                                                    />
-
-                                                    <span className="text-[10px] text-muted whitespace-nowrap">
-                                                        {item.month}
-                                                    </span>
-                                                </div>
-                                            );
-                                        }
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Payments */}
-
-                        <div className="bg-surface border border-border rounded-xl p-5">
-
-                            <div className="flex items-center justify-between mb-6">
-
-                                <div>
-                                    <h2 className="font-semibold text-text">
-                                        Payment Overview
-                                    </h2>
-
-                                    <p className="text-xs text-muted mt-1">
-                                        Monthly payment activity
-                                    </p>
-                                </div>
-
-                                <CreditCard
-                                    size={19}
-                                    className="text-muted"
-                                />
-                            </div>
-
-                            {monthlyPayments.length === 0 ? (
-                                <div className="h-56 flex items-center justify-center">
-                                    <p className="text-sm text-muted">
-                                        No payment data available.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="h-56 flex items-end gap-3 overflow-x-auto pb-6">
-
-                                    {monthlyPayments.map(
-                                        (item, index) => {
-
-                                            const values =
-                                                monthlyPayments.map(
-                                                    (entry) =>
-                                                        Number(entry.amount) || 0
-                                                );
-
-                                            const maxValue =
-                                                Math.max(...values, 1);
-
-                                            const height =
-                                                ((Number(item.amount) ||
-                                                    0) /
-                                                    maxValue) *
-                                                100;
-
-                                            return (
-                                                <div
-                                                    key={
-                                                        item.month ||
-                                                        index
-                                                    }
-                                                    className="min-w-[48px] flex-1 h-full flex flex-col justify-end items-center gap-2"
-                                                >
-
-                                                    <div className="text-[10px] text-muted">
-                                                        {formatCurrency(
-                                                            item.amount
-                                                        )}
-                                                    </div>
-
-                                                    <div
-                                                        className="w-full max-w-[42px] bg-success rounded-t-md transition-all"
-                                                        style={{
-                                                            height: `${Math.max(
-                                                                height,
-                                                                4
-                                                            )}%`,
-                                                        }}
-                                                    />
-
-                                                    <span className="text-[10px] text-muted whitespace-nowrap">
-                                                        {item.month}
-                                                    </span>
-                                                </div>
-                                            );
-                                        }
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* =========================================================
-            RECENT MEMBERS + TRANSACTIONS
-        ========================================================= */}
-
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-                        {/* Recent Members */}
-
-                        <div className="bg-surface border border-border rounded-xl">
-
-                            <div className="p-5 border-b border-border flex items-center justify-between">
-
-                                <div>
-                                    <h2 className="font-semibold text-text">
-                                        Recent Members
-                                    </h2>
-
-                                    <p className="text-xs text-muted mt-1">
-                                        Recently added members
-                                    </p>
-                                </div>
-
-                                <button
-                                    onClick={() =>
-                                        window.location.href =
-                                        "/owner/members"
-                                    }
-                                    className="text-xs font-medium text-btn hover:underline"
-                                >
-                                    View all
-                                </button>
-                            </div>
-
-                            <div className="divide-y divide-border">
-
-                                {members.length === 0 ? (
-                                    <div className="p-8 text-center">
-                                        <Users
-                                            size={28}
-                                            className="mx-auto text-muted"
-                                        />
-
-                                        <p className="text-sm text-muted mt-3">
-                                            No members found.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    members
-                                        .slice(0, 5)
-                                        .map((member) => (
-                                            <div
-                                                key={member.id}
-                                                className="p-4 flex items-center justify-between gap-4"
-                                            >
-
-                                                <div className="flex items-center gap-3 min-w-0">
-
-                                                    <div className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center shrink-0">
-                                                        <span className="text-xs font-semibold text-text">
-                                                            {getInitials(
-                                                                member.name
-                                                            )}
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-medium text-text truncate">
-                                                            {member.name}
-                                                        </p>
-
-                                                        <p className="text-xs text-muted truncate">
-                                                            {member.email ||
-                                                                member.phone ||
-                                                                "No contact information"}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="text-right shrink-0">
-                                                    <p className="text-sm font-medium text-text">
-                                                        {formatCurrency(
-                                                            member.totalSaving
-                                                        )}
-                                                    </p>
-
-                                                    <p className="text-[11px] text-muted mt-1">
-                                                        {formatDate(
-                                                            member.createdAt
-                                                        )}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Recent Transactions */}
-
-                        <div className="bg-surface border border-border rounded-xl">
-
-                            <div className="p-5 border-b border-border flex items-center justify-between">
-
-                                <div>
-                                    <h2 className="font-semibold text-text">
-                                        Recent Transactions
-                                    </h2>
-
-                                    <p className="text-xs text-muted mt-1">
-                                        Latest financial activity
-                                    </p>
-                                </div>
-
-                                <button
-                                    onClick={() =>
-                                        window.location.href =
-                                        "/owner/payments"
-                                    }
-                                    className="text-xs font-medium text-btn hover:underline"
-                                >
-                                    View all
-                                </button>
-                            </div>
-
-                            <div className="divide-y divide-border">
-
-                                {transactions.length === 0 ? (
-                                    <div className="p-8 text-center">
-                                        <CreditCard
-                                            size={28}
-                                            className="mx-auto text-muted"
-                                        />
-
-                                        <p className="text-sm text-muted mt-3">
-                                            No transactions found.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    transactions
-                                        .slice(0, 5)
-                                        .map((transaction) => {
-
-                                            const isIncome =
-                                                transaction.type ===
-                                                "DEPOSIT" ||
-                                                transaction.type ===
-                                                "PAYMENT" ||
-                                                transaction.type ===
-                                                "CREDIT";
-
-                                            return (
-                                                <div
-                                                    key={transaction.id}
-                                                    className="p-4 flex items-center justify-between gap-4"
-                                                >
-
-                                                    <div className="flex items-center gap-3 min-w-0">
-
-                                                        <div
-                                                            className={`w-9 h-9 rounded-lg flex items-center justify-center ${isIncome
-                                                                    ? "bg-success/10"
-                                                                    : "bg-danger/10"
-                                                                }`}
-                                                        >
-                                                            {isIncome ? (
-                                                                <ArrowDownLeft
-                                                                    size={17}
-                                                                    className="text-success"
-                                                                />
-                                                            ) : (
-                                                                <ArrowUpRight
-                                                                    size={17}
-                                                                    className="text-danger"
-                                                                />
-                                                            )}
-                                                        </div>
-
-                                                        <div className="min-w-0">
-                                                            <p className="text-sm font-medium text-text truncate">
-                                                                {transaction.description ||
-                                                                    transaction.type ||
-                                                                    "Transaction"}
-                                                            </p>
-
-                                                            <p className="text-xs text-muted mt-1">
-                                                                {transaction.memberName ||
-                                                                    "Member"}{" "}
-                                                                ·{" "}
-                                                                {formatDate(
-                                                                    transaction.createdAt
-                                                                )}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="text-right shrink-0">
-
-                                                        <p
-                                                            className={`text-sm font-semibold ${isIncome
-                                                                    ? "text-success"
-                                                                    : "text-danger"
-                                                                }`}
-                                                        >
-                                                            {isIncome
-                                                                ? "+"
-                                                                : "-"}
-                                                            {formatCurrency(
-                                                                transaction.amount
-                                                            )}
-                                                        </p>
-
-                                                        <span className="text-[10px] text-muted">
-                                                            {transaction.status ||
-                                                                "Completed"}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* =========================================================
-            QUICK ACTIONS
-        ========================================================= */}
-
-                    <div className="mt-6 bg-surface border border-border rounded-xl p-5">
-
-                        <div className="mb-4">
-                            <h2 className="font-semibold text-text">
-                                Quick Actions
-                            </h2>
-
-                            <p className="text-xs text-muted mt-1">
-                                Frequently used management actions
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-
-                            <button
-                                onClick={() =>
-                                    window.location.href =
-                                    "/register"
-                                }
-                                className="flex items-center gap-3 p-4 border border-border rounded-lg hover:border-btn hover:bg-btn/5 transition text-left"
-                            >
-                                <UserPlus
-                                    size={19}
-                                    className="text-btn"
-                                />
-
-                                <div>
-                                    <p className="text-sm font-medium text-text">
-                                        Add Member
-                                    </p>
-
-                                    <p className="text-xs text-muted mt-1">
-                                        Create a new account
-                                    </p>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() =>
-                                    window.location.href =
-                                    "/owner/members"
-                                }
-                                className="flex items-center gap-3 p-4 border border-border rounded-lg hover:border-btn hover:bg-btn/5 transition text-left"
-                            >
-                                <Users
-                                    size={19}
-                                    className="text-btn"
-                                />
-
-                                <div>
-                                    <p className="text-sm font-medium text-text">
-                                        Manage Members
-                                    </p>
-
-                                    <p className="text-xs text-muted mt-1">
-                                        View all members
-                                    </p>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() =>
-                                    window.location.href =
-                                    "/owner/payments"
-                                }
-                                className="flex items-center gap-3 p-4 border border-border rounded-lg hover:border-btn hover:bg-btn/5 transition text-left"
-                            >
-                                <CreditCard
-                                    size={19}
-                                    className="text-btn"
-                                />
-
-                                <div>
-                                    <p className="text-sm font-medium text-text">
-                                        Payments
-                                    </p>
-
-                                    <p className="text-xs text-muted mt-1">
-                                        Manage transactions
-                                    </p>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() =>
-                                    window.location.href =
-                                    "/owner/notices"
-                                }
-                                className="flex items-center gap-3 p-4 border border-border rounded-lg hover:border-btn hover:bg-btn/5 transition text-left"
-                            >
-                                <MoreHorizontal
-                                    size={19}
-                                    className="text-btn"
-                                />
-
-                                <div>
-                                    <p className="text-sm font-medium text-text">
-                                        Notices
-                                    </p>
-
-                                    <p className="text-xs text-muted mt-1">
-                                        Send organization notices
-                                    </p>
-                                </div>
-                            </button>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </Layout>
-    );
+import { getStoredUser } from "../../utils/auth";
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleDateString("en-NP", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
 };
 
-export default Dashboard;
+const formatCurrency = (value) => {
+  const amount = Number(value);
+  return Number.isFinite(amount)
+    ? `रू ${amount.toLocaleString("en-NP", { maximumFractionDigits: 2 })}`
+    : "—";
+};
+
+const displayStatus = (value) =>
+  String(value || "Unknown")
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const badgeClass = (value) => {
+  if (["APPROVED", "PRESENT", "COMPLETED"].includes(value)) {
+    return "bg-emerald-50 text-emerald-700";
+  }
+  if (["PENDING", "IN_PROGRESS", "LATE"].includes(value)) {
+    return "bg-amber-50 text-amber-700";
+  }
+  if (["REJECTED", "ABSENT", "CANCELLED"].includes(value)) {
+    return "bg-rose-50 text-rose-700";
+  }
+  return "bg-slate-100 text-slate-600";
+};
+
+const StatCard = ({ label, value, detail, icon: Icon, tone }) => (
+  <article className="rounded-xl border border-border bg-white p-4 shadow-sm shadow-slate-900/[0.02] sm:p-5">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-muted">{label}</p>
+        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[28px]">
+          {value}
+        </p>
+      </div>
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+        <Icon size={19} />
+      </span>
+    </div>
+    <p className="mt-3 text-[11px] leading-5 text-slate-500">{detail}</p>
+  </article>
+);
+
+const OwnerDashboard = () => {
+  const user = getStoredUser();
+  const [dashboard, setDashboard] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadDashboard = useCallback(async (refresh = false) => {
+    if (refresh) setRefreshing(true);
+    else setLoading(true);
+    setError("");
+
+    try {
+      const { data } = await api.get("/dashboard/admin");
+      if (!data?.success || !data.dashboard) {
+        throw new Error(data?.message || "Unable to load your dashboard.");
+      }
+      setDashboard(data.dashboard);
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.message ||
+          requestError.message ||
+          "Unable to load your dashboard."
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => loadDashboard());
+  }, [loadDashboard]);
+
+  const overview = dashboard?.overview || {};
+  const tasks = dashboard?.tasks || {};
+  const attendance = dashboard?.attendance || {};
+  const recentEmployees = dashboard?.recentEmployees || [];
+  const recentPayrolls = dashboard?.recentPayrolls || [];
+  const recentLeaves = dashboard?.recentLeaves || [];
+  const recentNotices = dashboard?.recentNotices || [];
+
+  const taskBreakdown = [
+    ["To do", tasks.todo ?? 0, "TODO", "bg-slate-400"],
+    ["In progress", tasks.inProgress ?? 0, "IN_PROGRESS", "bg-indigo-500"],
+    ["Completed", tasks.completed ?? 0, "COMPLETED", "bg-emerald-500"],
+    ["Cancelled", tasks.cancelled ?? 0, "CANCELLED", "bg-rose-400"],
+  ];
+  const taskTotal = Number(tasks.total) || 0;
+  const attendanceBreakdown = [
+    ["Present", attendance.present ?? 0, "PRESENT", "bg-emerald-500"],
+    ["Late", attendance.late ?? 0, "LATE", "bg-amber-500"],
+    ["Absent", attendance.absent ?? 0, "ABSENT", "bg-rose-500"],
+    ["Half day", attendance.halfDay ?? 0, "HALF_DAY", "bg-indigo-500"],
+    ["On leave", attendance.leave ?? 0, "LEAVE", "bg-slate-400"],
+  ];
+  const attendanceTotal = attendanceBreakdown.reduce(
+    (sum, [, count]) => sum + Number(count || 0),
+    0
+  );
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-medium text-indigo-600">
+              {new Date().toLocaleDateString("en-NP", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              Welcome back, {user?.name?.split(/\s+/)[0] || "there"}
+            </h2>
+            <p className="mt-1.5 text-sm text-muted">
+              Here’s a live overview of your people and daily operations.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => loadDashboard(true)}
+            disabled={refreshing}
+            className="inline-flex items-center justify-center gap-2 self-start rounded-lg border border-border bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:self-auto"
+          >
+            <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </button>
+        </header>
+
+        {error && (
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <span>{error}</span>
+            <button type="button" onClick={() => loadDashboard()} className="font-semibold underline underline-offset-2">
+              Try again
+            </button>
+          </div>
+        )}
+
+        {loading && !dashboard ? (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Loading dashboard">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="h-32 animate-pulse rounded-xl border border-border bg-white" />
+            ))}
+          </div>
+        ) : dashboard ? (
+          <>
+            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <StatCard
+                label="Total employees"
+                value={overview.totalEmployees ?? 0}
+                detail={`${overview.activeEmployees ?? 0} currently active`}
+                icon={Users}
+                tone="bg-indigo-50 text-indigo-600"
+              />
+              <StatCard
+                label="Departments"
+                value={overview.totalDepartments ?? 0}
+                detail="Across your organization"
+                icon={Building2}
+                tone="bg-violet-50 text-violet-600"
+              />
+              <StatCard
+                label="Pending leave"
+                value={overview.pendingLeaves ?? 0}
+                detail="Requests awaiting review"
+                icon={CalendarCheck}
+                tone="bg-amber-50 text-amber-600"
+              />
+              <StatCard
+                label="Tasks in progress"
+                value={tasks.inProgress ?? 0}
+                detail={`${tasks.total ?? 0} tasks in the system`}
+                icon={ClipboardList}
+                tone="bg-sky-50 text-sky-600"
+              />
+            </section>
+
+            <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+              <article className="rounded-xl border border-border bg-white p-5 shadow-sm shadow-slate-900/[0.02]">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Attendance today</h3>
+                    <p className="mt-1 text-xs text-muted">
+                      {attendanceTotal} attendance records for today
+                    </p>
+                  </div>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                    <CalendarCheck size={17} />
+                  </span>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {attendanceBreakdown.map(([label, count, status, color]) => {
+                    const percent = attendanceTotal
+                      ? Math.min((Number(count) / attendanceTotal) * 100, 100)
+                      : 0;
+                    return (
+                      <Link
+                        key={label}
+                        to={`/workspace/attendance?status=${status}`}
+                        className="group grid grid-cols-[84px_1fr_32px] items-center gap-3 rounded-md py-1 text-xs hover:bg-slate-50"
+                        aria-label={`${label}: ${count}. View attendance records`}
+                      >
+                        <span className="text-slate-600">{label}</span>
+                        <span className="h-2 overflow-hidden rounded-full bg-slate-100">
+                          <span className={`block h-full rounded-full ${color}`} style={{ width: `${percent}%` }} />
+                        </span>
+                        <span className="text-right font-semibold text-slate-700">{count}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+                <div className="mt-5 border-t border-border pt-4">
+                  <Link to="/workspace/attendance" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                    View attendance <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </article>
+
+              <article className="rounded-xl border border-border bg-white p-5 shadow-sm shadow-slate-900/[0.02]">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Task progress</h3>
+                    <p className="mt-1 text-xs text-muted">{taskTotal} tracked tasks</p>
+                  </div>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                    <ClipboardList size={17} />
+                  </span>
+                </div>
+                <div className="mt-5 flex h-2.5 overflow-hidden rounded-full bg-slate-100" aria-label="Task status distribution">
+                  {taskBreakdown.map(([label, count, status, color]) => (
+                    taskTotal > 0 && Number(count) > 0 ? (
+                      <Link
+                        key={status}
+                        to={`/workspace/tasks?status=${status}`}
+                        className={`${color} transition-opacity hover:opacity-75`}
+                        style={{ width: `${(Number(count) / taskTotal) * 100}%` }}
+                        title={`${label}: ${count}`}
+                        aria-label={`${label}: ${count} tasks`}
+                      />
+                    ) : null
+                  ))}
+                </div>
+                <div className="mt-5 space-y-3">
+                  {taskBreakdown.map(([label, count, status, color]) => (
+                    <Link key={status} to={`/workspace/tasks?status=${status}`} className="flex items-center justify-between gap-3 rounded-md py-1 text-xs hover:bg-slate-50">
+                      <span className="flex items-center gap-2 text-slate-600">
+                        <span className={`h-2 w-2 rounded-full ${color}`} />
+                        {label}
+                      </span>
+                      <span className="font-semibold text-slate-800">{count}</span>
+                    </Link>
+                  ))}
+                </div>
+                <Link to="/workspace/tasks" className="mt-4 inline-flex items-center gap-1.5 border-t border-border pt-4 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                  Manage tasks <ArrowRight size={14} />
+                </Link>
+              </article>
+            </section>
+
+            <section className="grid gap-5 xl:grid-cols-2">
+              <article className="overflow-hidden rounded-xl border border-border bg-white shadow-sm shadow-slate-900/[0.02]">
+                <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Recent employees</h3>
+                    <p className="mt-1 text-xs text-muted">Recently added to the team</p>
+                  </div>
+                  <Link to="/owner/employees" className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                    View all <ArrowRight size={13} />
+                  </Link>
+                </div>
+                {recentEmployees.length ? (
+                  <ul className="divide-y divide-slate-100">
+                    {recentEmployees.slice(0, 5).map((employee) => {
+                      const name = employee.user?.name || "Employee";
+                      const initials = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+                      return (
+                        <li key={employee.id} className="flex items-center gap-3 px-5 py-3.5">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-[11px] font-semibold text-indigo-700">{initials}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-xs font-semibold text-slate-800">{name}</span>
+                            <span className="mt-0.5 block truncate text-[11px] text-muted">{employee.user?.email || employee.position || "Team member"}</span>
+                          </span>
+                          <span className="hidden text-right sm:block">
+                            <span className="block max-w-32 truncate text-[11px] font-medium text-slate-700">{employee.department?.name || "No department"}</span>
+                            <span className="mt-0.5 block text-[10px] text-muted">{employee.user?.isActive ? "Active" : "Inactive"}</span>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <EmptyPanel icon={Users} message="No employee profiles found." />
+                )}
+              </article>
+
+              <article className="overflow-hidden rounded-xl border border-border bg-white shadow-sm shadow-slate-900/[0.02]">
+                <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Leave requests</h3>
+                    <p className="mt-1 text-xs text-muted">Latest requests requiring attention</p>
+                  </div>
+                  <Link to="/workspace/leaves" className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                    Review <ArrowRight size={13} />
+                  </Link>
+                </div>
+                {recentLeaves.length ? (
+                  <ul className="divide-y divide-slate-100">
+                    {recentLeaves.slice(0, 5).map((leave) => (
+                      <li key={leave.id} className="flex items-center gap-3 px-5 py-3.5">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                          <Clock3 size={16} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-semibold text-slate-800">{leave.employee?.user?.name || "Employee"} · {displayStatus(leave.leaveType)}</span>
+                          <span className="mt-0.5 block truncate text-[11px] text-muted">{formatDate(leave.startDate)} – {formatDate(leave.endDate)}</span>
+                        </span>
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${badgeClass(leave.status)}`}>{displayStatus(leave.status)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyPanel icon={CheckCheck} message="No recent leave requests." />
+                )}
+              </article>
+            </section>
+
+            <section className="grid gap-5 xl:grid-cols-2">
+              <article className="overflow-hidden rounded-xl border border-border bg-white shadow-sm shadow-slate-900/[0.02]">
+                <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Latest notices</h3>
+                    <p className="mt-1 text-xs text-muted">Recent organization announcements</p>
+                  </div>
+                  <Link to="/workspace/notices" className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                    All notices <ArrowRight size={13} />
+                  </Link>
+                </div>
+                {recentNotices.length ? (
+                  <ul className="divide-y divide-slate-100">
+                    {recentNotices.slice(0, 4).map((notice) => (
+                      <li key={notice.id} className="flex items-start gap-3 px-5 py-4">
+                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600"><Megaphone size={15} /></span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-semibold text-slate-800">{notice.title}</span>
+                          <span className="mt-1 line-clamp-2 block text-[11px] leading-5 text-muted">{notice.message}</span>
+                          <span className="mt-1.5 block text-[10px] text-slate-400">{formatDate(notice.createdAt)} · {notice.createdByUser?.name || "Management"}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyPanel icon={Megaphone} message="No notices have been published." />
+                )}
+              </article>
+
+              <article className="overflow-hidden rounded-xl border border-border bg-white shadow-sm shadow-slate-900/[0.02]">
+                <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Recent payroll</h3>
+                    <p className="mt-1 text-xs text-muted">Latest salary records</p>
+                  </div>
+                  <Link to="/workspace/payroll" className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                    View payroll <ArrowRight size={13} />
+                  </Link>
+                </div>
+                {recentPayrolls.length ? (
+                  <ul className="divide-y divide-slate-100">
+                    {recentPayrolls.slice(0, 5).map((payroll) => (
+                      <li key={payroll.id} className="flex items-center gap-3 px-5 py-3.5">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"><CreditCard size={16} /></span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-semibold text-slate-800">{payroll.employee?.user?.name || "Employee"}</span>
+                          <span className="mt-0.5 block text-[11px] text-muted">{new Date(2000, Number(payroll.month) - 1).toLocaleString("en", { month: "long" })} {payroll.year}</span>
+                        </span>
+                        <span className="text-right">
+                          <span className="block text-xs font-semibold text-slate-800">{formatCurrency(payroll.netSalary)}</span>
+                          <span className="mt-0.5 block text-[10px] text-muted">Net salary</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyPanel icon={CreditCard} message="No payroll records have been created." />
+                )}
+              </article>
+            </section>
+
+            <section className="rounded-xl border border-border bg-white p-5 shadow-sm shadow-slate-900/[0.02]">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-slate-900">Quick access</h3>
+                <p className="mt-1 text-xs text-muted">Go directly to common people operations.</p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                <QuickLink to="/owner/employees" icon={Users} label="Manage employees" />
+                <QuickLink to="/owner/departments" icon={Building2} label="Manage departments" />
+                <QuickLink to="/workspace/leaves" icon={CalendarCheck} label="Review leave" />
+                <QuickLink to="/workspace/notices" icon={Megaphone} label="Create a notice" />
+              </div>
+            </section>
+          </>
+        ) : (
+          <div className="rounded-xl border border-border bg-white px-5 py-16 text-center">
+            <p className="text-sm font-semibold text-slate-800">Dashboard unavailable</p>
+            <p className="mt-1 text-xs text-muted">Try again to retrieve current organization data.</p>
+            <button type="button" onClick={() => loadDashboard()} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
+              <RefreshCw size={14} /> Retry
+            </button>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+};
+
+const EmptyPanel = ({ icon: Icon, message }) => (
+  <div className="flex items-center gap-3 px-5 py-8 text-xs text-muted">
+    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 text-slate-400">
+      <Icon size={16} />
+    </span>
+    {message}
+  </div>
+);
+
+const QuickLink = ({ to, icon: Icon, label }) => (
+  <Link to={to} className="flex items-center gap-3 rounded-lg border border-border px-3.5 py-3 text-xs font-medium text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50/60 hover:text-indigo-700">
+    <Icon size={16} className="text-indigo-600" />
+    <span className="flex-1">{label}</span>
+    <ArrowRight size={14} className="text-slate-400" />
+  </Link>
+);
+
+export default OwnerDashboard;

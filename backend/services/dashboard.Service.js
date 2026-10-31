@@ -37,9 +37,6 @@ export const getAdminDashboardData = async () => {
         prisma.notice.count(),
     ]);
 
-    /**
-     * STATUS WHERE WE GET THE EMPLOYE IS ACTIVE OR INACTIVE
-     */
 
     const [
         activeEmployees,
@@ -60,9 +57,6 @@ export const getAdminDashboardData = async () => {
         }),
     ]);
 
-    /**
-     * TASK STATISTICS
-     */
 
     const [
         todoTasks,
@@ -84,7 +78,7 @@ export const getAdminDashboardData = async () => {
 
         prisma.task.count({
             where: {
-                status: "COMPLETE",
+                status: "COMPLETED",
             },
         }),
 
@@ -95,10 +89,6 @@ export const getAdminDashboardData = async () => {
         }),
     ]);
 
-    /**
-     * TODAY
-     */
-
     const startOfToday = new Date();
 
     startOfToday.setHours(0, 0, 0, 0);
@@ -107,9 +97,6 @@ export const getAdminDashboardData = async () => {
 
     endOfToday.setHours(23, 59, 59, 999);
 
-    /**
-     * PRESENT
-     */
 
     const [
         presentToday,
@@ -169,9 +156,6 @@ export const getAdminDashboardData = async () => {
         }),
     ]);
 
-    /**
-     * RECENT DATA
-     */
 
     const [
         recentEmployees,
@@ -199,7 +183,11 @@ export const getAdminDashboardData = async () => {
                     },
                 },
 
-                department: true,
+                department: {
+                    select: {
+                        name: true,
+                    },
+                },
             },
         }),
 
@@ -335,9 +323,6 @@ export const getAdminDashboardData = async () => {
     };
 };
 
-/**
- * EMPLOYEE DASHBOARD
- */
 
 export const getEmployeeDashboardData = async (
   userId
@@ -371,10 +356,6 @@ export const getEmployeeDashboardData = async (
   }
 
 
-  // ---------------------------------------------------
-  // TASKS
-  // ---------------------------------------------------
-
   const [
     totalTasks,
     todoTasks,
@@ -404,15 +385,11 @@ export const getEmployeeDashboardData = async (
     prisma.task.count({
       where: {
         employeeId: employee.id,
-        status: "COMPLETE",
+        status: "COMPLETED",
       },
     }),
   ]);
 
-
-  // ---------------------------------------------------
-  // LEAVES
-  // ---------------------------------------------------
 
   const [
     totalLeaves,
@@ -449,10 +426,6 @@ export const getEmployeeDashboardData = async (
   ]);
 
 
-  // ---------------------------------------------------
-  // TODAY ATTENDANCE
-  // ---------------------------------------------------
-
   const startOfToday = new Date();
 
   startOfToday.setHours(0, 0, 0, 0);
@@ -481,9 +454,6 @@ export const getEmployeeDashboardData = async (
     });
 
 
-  // ---------------------------------------------------
-  // RECENT DATA
-  // ---------------------------------------------------
 
   const [
     myTasks,

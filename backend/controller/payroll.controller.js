@@ -24,7 +24,9 @@ export const createPayroll = async (req, res) => {
       !employeeId ||
       !month ||
       !year ||
-      basicSalary === undefined
+      basicSalary === undefined ||
+      basicSalary === null ||
+      basicSalary === ""
     ) {
       return res.status(400).json({
         success: false,
@@ -37,7 +39,7 @@ export const createPayroll = async (req, res) => {
     const monthNumber = Number(month);
     const yearNumber = Number(year);
 
-    if (Number.isNaN(employeeIdNumber)) {
+    if (!Number.isInteger(employeeIdNumber) || employeeIdNumber < 1) {
       return res.status(400).json({
         success: false,
         message: "Invalid employee ID",
@@ -45,7 +47,7 @@ export const createPayroll = async (req, res) => {
     }
 
     if (
-      Number.isNaN(monthNumber) ||
+      !Number.isInteger(monthNumber) ||
       monthNumber < 1 ||
       monthNumber > 12
     ) {
@@ -56,7 +58,7 @@ export const createPayroll = async (req, res) => {
     }
 
     if (
-      Number.isNaN(yearNumber) ||
+      !Number.isInteger(yearNumber) ||
       yearNumber < 2000
     ) {
       return res.status(400).json({
@@ -111,16 +113,24 @@ export const createPayroll = async (req, res) => {
 
     // Convert numbers
     const salary = Number(basicSalary);
-    const allowanceAmount = Number(allowances) || 0;
-    const deductionAmount = Number(deductions) || 0;
-    const overtimeAmount = Number(overtime) || 0;
-    const bonusAmount = Number(bonus) || 0;
-    const taxAmount = Number(tax) || 0;
+    const allowanceAmount = Number(allowances);
+    const deductionAmount = Number(deductions);
+    const overtimeAmount = Number(overtime);
+    const bonusAmount = Number(bonus);
+    const taxAmount = Number(tax);
+    const amounts = [
+      salary,
+      allowanceAmount,
+      deductionAmount,
+      overtimeAmount,
+      bonusAmount,
+      taxAmount,
+    ];
 
-    if (salary < 0) {
+    if (amounts.some((amount) => !Number.isFinite(amount) || amount < 0)) {
       return res.status(400).json({
         success: false,
-        message: "Basic salary cannot be negative",
+        message: "Salary amounts must be valid non-negative numbers",
       });
     }
 
@@ -476,6 +486,22 @@ export const updatePayroll = async (req, res) => {
       tax !== undefined
         ? Number(tax)
         : existingPayroll.tax;
+
+    const amounts = [
+      salary,
+      allowanceAmount,
+      deductionAmount,
+      overtimeAmount,
+      bonusAmount,
+      taxAmount,
+    ];
+
+    if (amounts.some((amount) => !Number.isFinite(amount) || amount < 0)) {
+      return res.status(400).json({
+        success: false,
+        message: "Salary amounts must be valid non-negative numbers",
+      });
+    }
 
     // Recalculate salary
     const grossSalary =

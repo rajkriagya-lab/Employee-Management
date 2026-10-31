@@ -1,639 +1,163 @@
-import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
-  Users,
   Building2,
-  CalendarCheck,
-  CalendarDays,
-  ClipboardList,
-  Wallet,
-  Megaphone,
+  ChevronsLeft,
+  ChevronsRight,
   LogOut,
   X,
-  ChevronRight,
-  Settings,
 } from "lucide-react";
+import { clearStoredAuth, getHomePath, getStoredUser } from "../../../utils/auth";
+import { getNavigationGroups } from "../../../utils/navigation";
 
 const Sidebar = ({
   isOpen,
   setIsOpen,
-  role = "EMPLOYEE",
+  isCollapsed,
+  setIsCollapsed,
 }) => {
   const navigate = useNavigate();
-
-  /*
-   * =====================================================
-   * GET CURRENT USER
-   * =====================================================
-   */
-
-  const storedUser =
-    localStorage.getItem("user") ||
-    sessionStorage.getItem("user");
-
-  const user = storedUser
-    ? JSON.parse(storedUser)
-    : null;
-
-  const currentRole =
-    user?.role || role || "EMPLOYEE";
-
-  /*
-   * =====================================================
-   * LOGOUT
-   * =====================================================
-   */
+  const user = getStoredUser();
+  const role = user?.role || "EMPLOYEE";
+  const groups = getNavigationGroups(role);
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("user");
-
-    navigate("/login");
+    clearStoredAuth();
+    navigate("/login", { replace: true });
   };
 
-  /*
-   * =====================================================
-   * USER INITIALS
-   * =====================================================
-   */
-
-  const getInitials = () => {
-    if (!user?.name) return "U";
-
-    const parts = user.name.trim().split(" ");
-
-    if (parts.length === 1) {
-      return parts[0]
-        .charAt(0)
-        .toUpperCase();
-    }
-
-    return (
-      parts[0].charAt(0) +
-      parts[parts.length - 1].charAt(0)
-    ).toUpperCase();
-  };
-
-  /*
-   * =====================================================
-   * OWNER / ADMIN LINKS
-   * =====================================================
-   */
-
-  const ownerLinks = [
-    {
-      name: "Dashboard",
-      path: "/owner/dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "Employees",
-      path: "/owner/employees",
-      icon: Users,
-    },
-    {
-      name: "Departments",
-      path: "/owner/departments",
-      icon: Building2,
-    },
-    {
-      name: "Attendance",
-      path: "/owner/attendance",
-      icon: CalendarCheck,
-    },
-    {
-      name: "Leaves",
-      path: "/owner/leaves",
-      icon: CalendarDays,
-    },
-    {
-      name: "Tasks",
-      path: "/owner/tasks",
-      icon: ClipboardList,
-    },
-    {
-      name: "Payroll",
-      path: "/owner/payroll",
-      icon: Wallet,
-    },
-    {
-      name: "Notices",
-      path: "/owner/notices",
-      icon: Megaphone,
-    },
-  ];
-
-  /*
-   * =====================================================
-   * EMPLOYEE LINKS
-   * =====================================================
-   */
-
-  const employeeLinks = [
-    {
-      name: "Dashboard",
-      path: "/member/dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "Attendance",
-      path: "/member/attendance",
-      icon: CalendarCheck,
-    },
-    {
-      name: "Leaves",
-      path: "/member/leaves",
-      icon: CalendarDays,
-    },
-    {
-      name: "Tasks",
-      path: "/member/tasks",
-      icon: ClipboardList,
-    },
-    {
-      name: "Payroll",
-      path: "/member/payroll",
-      icon: Wallet,
-    },
-    {
-      name: "Notices",
-      path: "/member/notices",
-      icon: Megaphone,
-    },
-  ];
-
-  /*
-   * OWNER + ADMIN GET MANAGEMENT SIDEBAR
-   */
-
-  const links =
-    currentRole === "OWNER" ||
-    currentRole === "ADMIN"
-      ? ownerLinks
-      : employeeLinks;
+  const initials = (user?.name || "User")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 
   return (
-    <>
-      {/* =================================================
-          MOBILE OVERLAY
-      ================================================= */}
-
-      {isOpen && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-40
-            bg-black/50
-            backdrop-blur-[2px]
-            lg:hidden
-          "
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-surface transition-all duration-200 lg:translate-x-0 ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      } ${isCollapsed ? "lg:w-[5.25rem]" : "lg:w-64"}`}
+      aria-label="Main navigation"
+    >
+      <div className="flex h-[76px] shrink-0 items-center justify-between border-b border-border px-4">
+        <button
+          type="button"
+          onClick={() => navigate(getHomePath(role))}
+          className="flex min-w-0 items-center gap-3 rounded-lg text-left focus-visible:outline-offset-4"
+          aria-label="Go to dashboard"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/20">
+            <Building2 size={20} />
+          </span>
+          <span className={`min-w-0 ${isCollapsed ? "lg:hidden" : ""}`}>
+            <span className="block truncate text-[15px] font-bold tracking-tight text-slate-900">
+              BizFlow
+            </span>
+            <span className="mt-0.5 block truncate text-[11px] text-muted">
+              People operations
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
           onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* =================================================
-          SIDEBAR
-      ================================================= */}
-
-      <aside
-        className={`
-          fixed
-          top-0
-          left-0
-          z-50
-          h-screen
-          w-64
-          bg-text
-          text-white
-          flex
-          flex-col
-          border-r
-          border-white/10
-          shadow-2xl
-
-          transform
-          transition-transform
-          duration-300
-          ease-out
-
-          lg:translate-x-0
-
-          ${
-            isOpen
-              ? "translate-x-0"
-              : "-translate-x-full"
-          }
-        `}
-      >
-
-        {/* =================================================
-            LOGO
-        ================================================= */}
-
-        <div
-          className="
-            h-[72px]
-            px-5
-            flex
-            items-center
-            justify-between
-            border-b
-            border-white/10
-            shrink-0
-          "
+          aria-label="Close navigation"
+          className="rounded-lg p-2 text-muted hover:bg-background hover:text-text lg:hidden"
         >
-          <button
-            onClick={() =>
-              navigate(
-                currentRole === "OWNER" ||
-                  currentRole === "ADMIN"
-                  ? "/owner/dashboard"
-                  : "/member/dashboard"
-              )
-            }
-            className="
-              flex
-              items-center
-              gap-3
-              text-left
-            "
-          >
-            {/* Logo Icon */}
+          <X size={18} />
+        </button>
+      </div>
 
-            <div
-              className="
-                w-9
-                h-9
-                rounded-xl
-                bg-btn
-                flex
-                items-center
-                justify-center
-                shadow-lg
-                shadow-btn/20
-              "
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+        {groups.map((group) => (
+          <section key={group.label}>
+            <h2
+              className={`mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 ${
+                isCollapsed ? "lg:sr-only" : ""
+              }`}
             >
-              <Building2 size={19} />
-            </div>
-
-            <div>
-              <h1
-                className="
-                  text-[17px]
-                  font-bold
-                  tracking-tight
-                "
-              >
-                BizFlow
-              </h1>
-
-              <p
-                className="
-                  text-[10px]
-                  text-white/40
-                  mt-0.5
-                "
-              >
-                Employee Management
-              </p>
-            </div>
-          </button>
-
-          {/* Mobile close */}
-
-          <button
-            onClick={() => setIsOpen(false)}
-            className="
-              lg:hidden
-              w-8
-              h-8
-              rounded-lg
-              flex
-              items-center
-              justify-center
-              text-white/50
-              hover:text-white
-              hover:bg-white/10
-              transition
-            "
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* =================================================
-            NAVIGATION
-        ================================================= */}
-
-        <nav
-          className="
-            flex-1
-            px-3
-            py-5
-            overflow-y-auto
-            scrollbar-thin
-            scrollbar-thumb-white/10
-          "
-        >
-
-          {/* Section title */}
-
-          <p
-            className="
-              px-3
-              mb-3
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.15em]
-              text-white/30
-            "
-          >
-            Main Menu
-          </p>
-
-          <div className="space-y-1">
-
-            {links.map((link) => {
-              const Icon = link.icon;
-
-              return (
+              {group.label}
+            </h2>
+            <div className="space-y-1">
+              {group.items.map(({ label, path, icon: Icon }) => (
                 <NavLink
-                  key={link.path}
-                  to={link.path}
+                  key={path}
+                  to={path}
+                  end={path.endsWith("dashboard")}
+                  title={isCollapsed ? label : undefined}
                   onClick={() => setIsOpen(false)}
                   className={({ isActive }) =>
-                    `
-                      group
-                      relative
-                      flex
-                      items-center
-                      gap-3
-                      px-3
-                      py-2.5
-                      rounded-xl
-                      text-sm
-                      font-medium
-                      transition-all
-                      duration-200
-
-                      ${
-                        isActive
-                          ? `
-                            bg-btn
-                            text-white
-                            shadow-lg
-                            shadow-btn/20
-                          `
-                          : `
-                            text-white/60
-                            hover:text-white
-                            hover:bg-white/[0.07]
-                          `
-                      }
-                    `
+                    `group relative flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+                      isActive
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                    } ${isCollapsed ? "lg:justify-center lg:px-0" : ""}`
                   }
                 >
                   {({ isActive }) => (
                     <>
-                      {/* Active indicator */}
-
                       {isActive && (
-                        <span
-                          className="
-                            absolute
-                            left-0
-                            top-1/2
-                            -translate-y-1/2
-                            w-1
-                            h-6
-                            rounded-r-full
-                            bg-white
-                          "
-                        />
+                        <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-indigo-600" />
                       )}
-
-                      {/* Icon */}
-
-                      <span
-                        className={`
-                          w-9
-                          h-9
-                          rounded-lg
-                          flex
-                          items-center
-                          justify-center
-                          transition-all
-
-                          ${
-                            isActive
-                              ? "bg-white/10"
-                              : "bg-white/[0.04] group-hover:bg-white/[0.08]"
-                          }
-                        `}
-                      >
-                        <Icon
-                          size={18}
-                          strokeWidth={
-                            isActive ? 2 : 1.8
-                          }
-                        />
-                      </span>
-
-                      {/* Name */}
-
-                      <span className="flex-1">
-                        {link.name}
-                      </span>
-
-                      {/* Arrow */}
-
-                      <ChevronRight
-                        size={15}
-                        className={`
-                          transition-all
-                          duration-200
-
-                          ${
-                            isActive
-                              ? "opacity-100 translate-x-0"
-                              : "opacity-0 -translate-x-1 group-hover:opacity-50 group-hover:translate-x-0"
-                          }
-                        `}
+                      <Icon
+                        size={18}
+                        strokeWidth={isActive ? 2.2 : 1.8}
+                        className="shrink-0"
                       />
+                      <span className={isCollapsed ? "lg:hidden" : ""}>
+                        {label}
+                      </span>
                     </>
                   )}
                 </NavLink>
-              );
-            })}
-          </div>
-        </nav>
-
-        {/* =================================================
-            BOTTOM AREA
-        ================================================= */}
-
-        <div
-          className="
-            p-3
-            border-t
-            border-white/10
-            shrink-0
-          "
-        >
-
-          {/* User Card */}
-
-          <div
-            className="
-              mb-2
-              p-2
-              rounded-xl
-              bg-white/[0.05]
-              border
-              border-white/[0.06]
-            "
-          >
-            <div className="flex items-center gap-2.5">
-
-              {/* Avatar */}
-
-              <div
-                className="
-                  relative
-                  w-9
-                  h-9
-                  rounded-lg
-                  bg-btn
-                  flex
-                  items-center
-                  justify-center
-                  text-xs
-                  font-bold
-                  shrink-0
-                "
-              >
-                {getInitials()}
-
-                {/* Online */}
-
-                <span
-                  className="
-                    absolute
-                    right-[-2px]
-                    bottom-[-2px]
-                    w-2.5
-                    h-2.5
-                    rounded-full
-                    bg-emerald-400
-                    ring-2
-                    ring-text
-                  "
-                />
-              </div>
-
-              {/* User */}
-
-              <div className="min-w-0 flex-1">
-
-                <p
-                  className="
-                    text-xs
-                    font-semibold
-                    text-white
-                    truncate
-                  "
-                >
-                  {user?.name || "User"}
-                </p>
-
-                <p
-                  className="
-                    text-[10px]
-                    text-white/40
-                    capitalize
-                    truncate
-                    mt-0.5
-                  "
-                >
-                  {currentRole.toLowerCase()}
-                </p>
-
-              </div>
-
-              {/* Settings */}
-
-              <button
-                onClick={() =>
-                  navigate("/settings")
-                }
-                className="
-                  w-8
-                  h-8
-                  rounded-lg
-                  flex
-                  items-center
-                  justify-center
-                  text-white/40
-                  hover:text-white
-                  hover:bg-white/10
-                  transition
-                "
-              >
-                <Settings size={16} />
-              </button>
-
+              ))}
             </div>
-          </div>
+          </section>
+        ))}
+      </nav>
 
-          {/* Logout */}
-
+      <div className="shrink-0 border-t border-border p-3">
+        <div
+          className={`flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 ${
+            isCollapsed ? "lg:justify-center lg:px-1" : ""
+          }`}
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+            {initials || "U"}
+          </span>
+          <span className={`min-w-0 flex-1 ${isCollapsed ? "lg:hidden" : ""}`}>
+            <span className="block truncate text-xs font-semibold text-slate-800">
+              {user?.name || "Signed-in user"}
+            </span>
+            <span className="mt-0.5 block truncate text-[10px] capitalize text-muted">
+              {role.toLowerCase()}
+            </span>
+          </span>
           <button
+            type="button"
+            title="Sign out"
             onClick={logout}
-            className="
-              w-full
-              flex
-              items-center
-              gap-3
-              px-3
-              py-2.5
-              rounded-xl
-              text-sm
-              font-medium
-              text-white/55
-              hover:bg-red-500/10
-              hover:text-red-400
-              transition-all
-              duration-200
-            "
+            className={`rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-danger ${
+              isCollapsed ? "lg:hidden" : ""
+            }`}
+            aria-label="Sign out"
           >
-            <span
-              className="
-                w-9
-                h-9
-                rounded-lg
-                bg-white/[0.04]
-                flex
-                items-center
-                justify-center
-              "
-            >
-              <LogOut size={17} />
-            </span>
-
-            <span>
-              Logout
-            </span>
+            <LogOut size={16} />
           </button>
-
         </div>
-      </aside>
-    </>
+        <button
+          type="button"
+          onClick={() => setIsCollapsed((current) => !current)}
+          className="mt-2 hidden w-full items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 lg:flex"
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? <ChevronsRight size={17} /> : <ChevronsLeft size={17} />}
+          {!isCollapsed && "Collapse sidebar"}
+        </button>
+      </div>
+    </aside>
   );
 };
 

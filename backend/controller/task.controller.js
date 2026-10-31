@@ -399,6 +399,16 @@ export const getTaskById = async (req, res) => {
             });
         }
 
+        if (
+            req.user.role === "EMPLOYEE" &&
+            task.employeeId !== req.user.employee?.id
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not allowed to view this task",
+            });
+        }
+
         return res.status(200).json({
             success: true,
             task,
@@ -498,7 +508,11 @@ export const updateTask = async (req, res) => {
         // Validate due date
         let parsedDueDate;
 
-        if (dueDate !== undefined && dueDate !== null) {
+        if (
+            dueDate !== undefined &&
+            dueDate !== null &&
+            dueDate !== ""
+        ) {
             parsedDueDate = new Date(dueDate);
 
             if (Number.isNaN(parsedDueDate.getTime())) {
@@ -607,6 +621,16 @@ export const updateTaskStatus = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: "Task not found",
+            });
+        }
+
+        if (
+            req.user.role === "EMPLOYEE" &&
+            task.employeeId !== req.user.employee?.id
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not allowed to update this task",
             });
         }
 

@@ -1,12 +1,22 @@
 const errorMiddleware = (err, req, res, next) => {
-    console.error("ERROR:",err );
+    if (res.headersSent) {
+        return next(err);
+    }
 
-    const statusCode = 
-        res.statusCode === 200 ? 500 : res.statusCode;
-    
-        res.status(statusCode).json({
-        success: true,
-        message: err.message || "Internal Server Error",
+    console.error("ERROR:", err);
+
+    const statusCode =
+        Number.isInteger(err.statusCode) && err.statusCode >= 400
+            ? err.statusCode
+            : Number.isInteger(err.status) && err.status >= 400
+                ? err.status
+                : 500;
+
+    return res.status(statusCode).json({
+        success: false,
+        message: statusCode >= 500
+            ? "Internal Server Error"
+            : err.message || "Request failed",
     });
 };
 

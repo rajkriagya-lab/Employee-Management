@@ -13,7 +13,6 @@ export const createNotice = async (req, res) => {
       expiresAt,
     } = req.body;
 
-    // Validate required fields
     if (!title || !message) {
       return res.status(400).json({
         success: false,
@@ -21,7 +20,6 @@ export const createNotice = async (req, res) => {
       });
     }
 
-    // Validate priority
     const allowedPriorities = [
       "LOW",
       "NORMAL",
@@ -38,7 +36,6 @@ export const createNotice = async (req, res) => {
       });
     }
 
-    // Validate expiry date
     let parsedExpiresAt = null;
 
     if (expiresAt) {
@@ -52,7 +49,6 @@ export const createNotice = async (req, res) => {
       }
     }
 
-    // Create notice
     const notice = await prisma.notice.create({
       data: {
         title: title.trim(),
@@ -90,10 +86,6 @@ export const createNotice = async (req, res) => {
 };
 
 
-// =====================================================
-// GET ALL NOTICES
-// =====================================================
-
 export const getAllNotices = async (req, res) => {
   try {
     const { priority, active } = req.query;
@@ -119,7 +111,6 @@ export const getAllNotices = async (req, res) => {
       where.priority = priority;
     }
 
-    // Filter active notices
     if (active === "true") {
       where.OR = [
         {
@@ -167,10 +158,6 @@ export const getAllNotices = async (req, res) => {
   }
 };
 
-
-// =====================================================
-// GET ACTIVE NOTICES
-// =====================================================
 
 export const getActiveNotices = async (req, res) => {
   try {
@@ -336,7 +323,11 @@ export const updateNotice = async (req, res) => {
     // Validate expiry date
     let parsedExpiresAt;
 
-    if (expiresAt !== undefined && expiresAt !== null) {
+    if (
+      expiresAt !== undefined &&
+      expiresAt !== null &&
+      expiresAt !== ""
+    ) {
       parsedExpiresAt = new Date(expiresAt);
 
       if (Number.isNaN(parsedExpiresAt.getTime())) {

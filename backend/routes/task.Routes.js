@@ -13,6 +13,12 @@ import {
 
 import { protect } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/role.middleware.js";
+import validationMiddleware from "../middleware/validaton.middleware.js";
+import {
+    createTaskValidator,
+    updateTaskValidator,
+    updateTaskStatusValidator,
+} from "../validator/task.validator.js";
 
 const router = express.Router();
 
@@ -34,6 +40,8 @@ router.patch(
     "/:id/status",
     protect,
     authorize("EMPLOYEE", "MANAGER", "ADMIN", "OWNER"),
+    updateTaskStatusValidator,
+    validationMiddleware,
     updateTaskStatus
 );
 
@@ -71,6 +79,8 @@ router.post(
     "/",
     protect,
     authorize("OWNER", "ADMIN", "MANAGER"),
+    createTaskValidator,
+    validationMiddleware,
     createTask
 );
 
@@ -79,6 +89,8 @@ router.put(
     "/:id",
     protect,
     authorize("OWNER", "ADMIN", "MANAGER"),
+    updateTaskValidator,
+    validationMiddleware,
     updateTask
 );
 

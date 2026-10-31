@@ -32,6 +32,9 @@ export const register = async (req, res) => {
         email,
         password: hashedPassword,
         role: "EMPLOYEE",
+        employee: {
+          create: {},
+        },
       },
       select: {
         id: true,
@@ -53,7 +56,6 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     console.error("Register error:", error);
-
     return res.status(500).json({
       success: false,
       message: "Registration failed",
@@ -120,7 +122,6 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-
     return res.status(500).json({
       success: false,
       message: "Login failed",

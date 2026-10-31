@@ -79,12 +79,42 @@ export const markAttendance = async (req, res) => {
             });
         }
 
+        const attendanceDate = new Date(date);
+        const parsedCheckIn = checkIn ? new Date(checkIn) : null;
+        const parsedCheckOut = checkOut ? new Date(checkOut) : null;
+
+        if (
+            Number.isNaN(attendanceDate.getTime()) ||
+            (parsedCheckIn && Number.isNaN(parsedCheckIn.getTime())) ||
+            (parsedCheckOut && Number.isNaN(parsedCheckOut.getTime()))
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid attendance date or time",
+            });
+        }
+
+        if (parsedCheckIn && parsedCheckOut && parsedCheckOut < parsedCheckIn) {
+            return res.status(400).json({
+                success: false,
+                message: "Check-out cannot be before check-in",
+            });
+        }
+
+        attendanceDate.setHours(0, 0, 0, 0);
+
         // Check duplicate attendance
+        const attendanceDayEnd = new Date(attendanceDate);
+        attendanceDayEnd.setHours(23, 59, 59, 999);
+
         const existingAttendance =
             await prisma.attendance.findFirst({
                 where: {
                     employeeId: employeeIdNumber,
-                    date: new Date(date),
+                    date: {
+                        gte: attendanceDate,
+                        lte: attendanceDayEnd,
+                    },
                 },
             });
 
@@ -99,10 +129,10 @@ export const markAttendance = async (req, res) => {
         const attendance = await prisma.attendance.create({
             data: {
                 employeeId: employeeIdNumber,
-                date: new Date(date),
+                date: attendanceDate,
                 status,
-                checkIn: checkIn ? new Date(checkIn) : null,
-                checkOut: checkOut ? new Date(checkOut) : null,
+                checkIn: parsedCheckIn,
+                checkOut: parsedCheckOut,
                 remarks: remarks?.trim() || null,
             },
 
@@ -620,6 +650,55 @@ export const updateAttendance = async (req, res) => {
             });
         }
 
+        let parsedDate;
+        if (date !== undefined) {
+            parsedDate = new Date(date);
+            if (Number.isNaN(parsedDate.getTime())) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid attendance date",
+                });
+            }
+            parsedDate.setHours(0, 0, 0, 0);
+        }
+
+        const parsedCheckIn =
+            checkIn === undefined
+                ? undefined
+                : checkIn
+                    ? new Date(checkIn)
+                    : null;
+        const parsedCheckOut =
+            checkOut === undefined
+                ? undefined
+                : checkOut
+                    ? new Date(checkOut)
+                    : null;
+
+        if (
+            (parsedCheckIn && Number.isNaN(parsedCheckIn.getTime())) ||
+            (parsedCheckOut && Number.isNaN(parsedCheckOut.getTime()))
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid attendance time",
+            });
+        }
+
+        const finalCheckIn = parsedCheckIn === undefined
+            ? attendance.checkIn
+            : parsedCheckIn;
+        const finalCheckOut = parsedCheckOut === undefined
+            ? attendance.checkOut
+            : parsedCheckOut;
+
+        if (finalCheckIn && finalCheckOut && finalCheckOut < finalCheckIn) {
+            return res.status(400).json({
+                success: false,
+                message: "Check-out cannot be before check-in",
+            });
+        }
+
         const updatedAttendance =
             await prisma.attendance.update({
                 where: {
@@ -630,19 +709,15 @@ export const updateAttendance = async (req, res) => {
                     ...(status && { status }),
 
                     ...(date && {
-                        date: new Date(date),
+                        date: parsedDate,
                     }),
 
                     ...(checkIn !== undefined && {
-                        checkIn: checkIn
-                            ? new Date(checkIn)
-                            : null,
+                        checkIn: parsedCheckIn,
                     }),
 
                     ...(checkOut !== undefined && {
-                        checkOut: checkOut
-                            ? new Date(checkOut)
-                            : null,
+                        checkOut: parsedCheckOut,
                     }),
 
                     ...(remarks !== undefined && {
@@ -742,20 +817,49 @@ export const getAttendanceSummary = async (req, res) => {
         const where = {};
 
         if (employeeId) {
-            where.employeeId = Number(employeeId);
+            const parsedEmployeeId = Number(employeeId);
+            if (!Number.isInteger(parsedEmployeeId) || parsedEmployeeId < 1) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid employee ID",
+                });
+            }
+            where.employeeId = parsedEmployeeId;
         }
 
         // Filter by month/year
+        if (Boolean(month) !== Boolean(year)) {
+            return res.status(400).json({
+                success: false,
+                message: "Month and year must be supplied together",
+            });
+        }
+
         if (month && year) {
+            const monthNumber = Number(month);
+            const yearNumber = Number(year);
+            if (
+                !Number.isInteger(monthNumber) ||
+                monthNumber < 1 ||
+                monthNumber > 12 ||
+                !Number.isInteger(yearNumber) ||
+                yearNumber < 2000
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid month or year",
+                });
+            }
+
             const startDate = new Date(
-                Number(year),
-                Number(month) - 1,
+                yearNumber,
+                monthNumber - 1,
                 1
             );
 
             const endDate = new Date(
-                Number(year),
-                Number(month),
+                yearNumber,
+                monthNumber,
                 0,
                 23,
                 59,

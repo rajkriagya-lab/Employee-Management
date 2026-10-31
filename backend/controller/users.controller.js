@@ -157,6 +157,16 @@ export const updateUser = async (req, res) => {
       });
     }
 
+    if (
+      req.user.role === "ADMIN" &&
+      existingUser.role === "OWNER"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Admins cannot modify owner accounts",
+      });
+    }
+
     // Check email
     if (email && email.toLowerCase() !== existingUser.email) {
       const emailExists = await prisma.user.findUnique({
@@ -345,11 +355,10 @@ export const toggleUserStatus = async (req, res) => {
       });
     }
 
-    // Don't allow owner to deactivate themselves
-    if (req.user.id === userId && user.role === "OWNER") {
-      return res.status(400).json({
+    if (user.role === "OWNER" && user.isActive) {
+      return res.status(403).json({
         success: false,
-        message: "You cannot deactivate yourself",
+        message: "Owner accounts cannot be deactivated",
       });
     }
 
