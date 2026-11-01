@@ -228,9 +228,9 @@ const Navbar = ({ setIsOpen, isCollapsed, setIsCollapsed }) => {
               placeholder="Jump to a page..."
               className="h-10 w-full rounded-lg border border-border bg-slate-50 pl-9 pr-10 text-sm text-text placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100"
             />
-            <kbd className="absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-white px-1.5 py-0.5 text-[10px] text-slate-400 md:block">
+            {/* <kbd className="absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-white px-1.5 py-0.5 text-[10px] text-slate-400 md:block">
               /
-            </kbd>
+            </kbd> */}
             {searchOpen && search.trim() && (
               <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-full min-w-60 overflow-hidden rounded-xl border border-border bg-white p-1.5 shadow-xl">
                 {suggestions.length ? (

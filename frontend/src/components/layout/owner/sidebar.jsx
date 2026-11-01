@@ -117,7 +117,7 @@ const Sidebar = ({
         ))}
       </nav>
 
-      <div className="shrink-0 border-t border-border p-3">
+      {/* <div className="shrink-0 border-t border-border p-3">
         <div
           className={`flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 ${
             isCollapsed ? "lg:justify-center lg:px-1" : ""
@@ -156,7 +156,7 @@ const Sidebar = ({
           {isCollapsed ? <ChevronsRight size={17} /> : <ChevronsLeft size={17} />}
           {!isCollapsed && "Collapse sidebar"}
         </button>
-      </div>
+      </div> */}
     </aside>
   );
 };
